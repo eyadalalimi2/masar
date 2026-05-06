@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Orders\Distributor;
 use App\Http\Controllers\Controller;
 use App\Models\Distribution\Distributor;
 use App\Models\Distribution\DistributorAccount;
+use App\Modules\Delivery\Services\DeliveryDomainService;
+use App\Modules\Orders\Services\OrdersDomainService;
 use App\Models\Notifications\WebAlert;
 use App\Models\Orders\Order;
 use App\Services\Lookup\LookupService;
@@ -23,6 +25,8 @@ use Illuminate\View\View;
 class DistributorOrderController extends Controller
 {
     public function __construct(
+        private readonly OrdersDomainService $ordersDomainService,
+        private readonly DeliveryDomainService $deliveryDomainService,
         private readonly DistributorWorkflowService $workflowService,
         private readonly WebAlertService $webAlertService,
     ) {}
@@ -46,7 +50,8 @@ class DistributorOrderController extends Controller
             ->where('title', 'تنبيه تأخير التسليم')
             ->count();
 
-        $orders = Order::with(['supplier', 'branch', 'buyer', 'items.product'])
+        $orders = $this->ordersDomainService->ordersQuery()
+            ->with(['supplier', 'branch', 'buyer', 'items.product'])
             ->where('distributor_id', $distributor->id)
             ->when($stage !== 'all', fn($query) => $query->where('distributor_stage', $stage))
             ->latest()
@@ -193,7 +198,7 @@ class DistributorOrderController extends Controller
             $order = null;
 
             if (isset($event['order_id'])) {
-                $order = Order::query()
+                $order = $this->ordersDomainService->ordersQuery()
                     ->where('distributor_id', $distributor->id)
                     ->find((int) $event['order_id']);
             }
@@ -308,14 +313,14 @@ class DistributorOrderController extends Controller
             abort(403);
         }
 
-        return Distributor::query()->whereKey((int) $account->distributor_id)->firstOrFail();
+        return $this->deliveryDomainService->distributorsQuery()->whereKey((int) $account->distributor_id)->firstOrFail();
     }
 
     private function delayedOrdersQuery(Distributor $distributor)
     {
         $delayHours = max((int) env('DISTRIBUTOR_DELAY_ALERT_HOURS', 2), 1);
 
-        return Order::query()
+        return $this->ordersDomainService->ordersQuery()
             ->where('distributor_id', $distributor->id)
             ->whereIn('distributor_stage', ['accepted', 'picked_up', 'out_for_delivery'])
             ->whereNotIn('status', ['delivered', 'cancelled'])
@@ -338,7 +343,7 @@ class DistributorOrderController extends Controller
 
         $origin = $lastPosition ? [(float) $lastPosition->latitude, (float) $lastPosition->longitude] : null;
 
-        return Order::query()
+        return $this->ordersDomainService->ordersQuery()
             ->with(['buyer'])
             ->where('distributor_id', $distributor->id)
             ->whereIn('distributor_stage', ['accepted', 'picked_up', 'out_for_delivery'])

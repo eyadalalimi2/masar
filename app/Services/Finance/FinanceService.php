@@ -4,6 +4,7 @@ namespace App\Services\Finance;
 
 use App\Models\Finance\CustomerAccount;
 use App\Models\Finance\Payment;
+use App\Modules\Accounting\Services\AccountingDomainService;
 use App\Models\Orders\Order as CustomerOrder;
 use App\Models\Orders\Order;
 use Illuminate\Support\Facades\DB;
@@ -11,13 +12,15 @@ use Illuminate\Support\Str;
 
 class FinanceService
 {
+    public function __construct(private readonly AccountingDomainService $accountingDomainService) {}
+
     public function createPayment(Order $order, array $data): Payment
     {
         return DB::transaction(function () use ($order, $data) {
             $customerId = $order->buyer_type === CustomerOrder::BUYER_TYPE_CUSTOMER ? (int) $order->buyer_id : null;
             $customerName = trim((string) ($order->customer?->name ?? $order->customer_name ?? ''));
             $account = $customerId
-                ? CustomerAccount::firstOrCreate(
+                ? $this->accountingDomainService->customerAccountsQuery()->firstOrCreate(
                     ['owner_id' => $customerId],
                     [
                         'name' => $customerName !== '' ? $customerName : 'عميل',
@@ -61,7 +64,7 @@ class FinanceService
                 }
             }
 
-            $payment = Payment::create([
+            $payment = $this->accountingDomainService->paymentsQuery()->create([
                 'uuid' => (string) Str::uuid(),
                 'order_id' => $order->id,
                 'payment_method_id' => $order->payment_method_id,
@@ -108,7 +111,8 @@ class FinanceService
 
     public function recordTransaction(CustomerAccount $customer, string $type, float $amount, string $description = ''): void
     {
-        $customer->transactions()->create([
+        $this->accountingDomainService->transactionsQuery()->create([
+            'customer_account_id' => $customer->id,
             'type' => $type,
             'amount' => $amount,
             'description' => $description,
@@ -121,7 +125,7 @@ class FinanceService
             return;
         }
 
-        $account = CustomerAccount::firstOrCreate(
+        $account = $this->accountingDomainService->customerAccountsQuery()->firstOrCreate(
             ['owner_id' => $order->buyer_id],
             [
                 'name' => trim((string) ($order->customer?->name ?? $order->customer_name ?? '')) ?: 'عميل',

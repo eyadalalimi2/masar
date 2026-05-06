@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Catalog\Product;
 use App\Models\Customer\Customer;
 use App\Models\Distribution\Branch;
-use App\Models\Distribution\Distributor;
+use App\Modules\Delivery\Services\DeliveryDomainService;
+use App\Modules\Orders\Services\OrdersDomainService;
 use App\Models\Notifications\WebAlert;
 use App\Models\Orders\Order;
 use App\Services\Lookup\LookupService;
@@ -21,6 +22,8 @@ use Illuminate\View\View;
 class AgentOrderController extends Controller
 {
     public function __construct(
+        private readonly OrdersDomainService $ordersDomainService,
+        private readonly DeliveryDomainService $deliveryDomainService,
         private readonly OrderService $orderService,
         private readonly WebAlertService $webAlertService,
     ) {}
@@ -39,7 +42,8 @@ class AgentOrderController extends Controller
             ->where('title', 'تنبيه تأخير طلبات الوكيل')
             ->count();
 
-        $orders = Order::with(['branch', 'distributor', 'buyer', 'items.product', 'items.productUnit.unit', 'items.productVariant.variantValue.type', 'latestPayment.paymentMethod', 'latestPayment.account'])
+        $orders = $this->ordersDomainService->ordersQuery()
+            ->with(['branch', 'distributor', 'buyer', 'items.product', 'items.productUnit.unit', 'items.productVariant.variantValue.type', 'latestPayment.paymentMethod', 'latestPayment.account'])
             ->where('supplier_id', $supplierId)
             ->when($status !== '', function ($query) use ($status) {
                 $query->where('status', $status);
@@ -60,7 +64,10 @@ class AgentOrderController extends Controller
             ->where('status', 'active')
             ->get();
         $branches = Branch::where('supplier_id', $supplierId)->where('status', 'active')->get();
-        $distributors = Distributor::where('supplier_id', $supplierId)->where('status', 'active')->get();
+        $distributors = $this->deliveryDomainService->distributorsQuery()
+            ->where('supplier_id', $supplierId)
+            ->where('status', 'active')
+            ->get();
         $customers = Customer::query()->where('status', 'active')->orderBy('name')->get();
 
         return view('agent.orders.create', compact('products', 'branches', 'distributors', 'customers'));
@@ -78,7 +85,7 @@ class AgentOrderController extends Controller
         }
 
         if (! empty($payload['distributor_id'])) {
-            Distributor::where('supplier_id', $supplierId)->findOrFail($payload['distributor_id']);
+            $this->deliveryDomainService->distributorsQuery()->where('supplier_id', $supplierId)->findOrFail($payload['distributor_id']);
         }
 
         $this->orderService->createOrder($payload);
@@ -92,7 +99,10 @@ class AgentOrderController extends Controller
         abort_unless($order->supplier_id === $supplierId, 404);
 
         $order->load(['branch', 'distributor', 'buyer', 'items.product', 'items.productUnit.unit', 'items.productVariant.variantValue.type', 'creator', 'latestPayment.paymentMethod', 'latestPayment.account']);
-        $distributors = Distributor::where('supplier_id', $supplierId)->where('status', 'active')->get();
+        $distributors = $this->deliveryDomainService->distributorsQuery()
+            ->where('supplier_id', $supplierId)
+            ->where('status', 'active')
+            ->get();
 
         return view('agent.orders.show', compact('order', 'distributors'));
     }
@@ -109,7 +119,7 @@ class AgentOrderController extends Controller
         ]);
 
         if (! empty($data['distributor_id'])) {
-            Distributor::where('supplier_id', $supplierId)->findOrFail($data['distributor_id']);
+            $this->deliveryDomainService->distributorsQuery()->where('supplier_id', $supplierId)->findOrFail($data['distributor_id']);
         }
 
         $this->orderService->assignDistributor($order, $data['distributor_id'] ?? null);
@@ -122,7 +132,7 @@ class AgentOrderController extends Controller
         $supplierId = (int) Auth::guard('agent')->user()->supplier->id;
         abort_unless((int) $order->supplier_id === $supplierId, 404);
 
-        $distributor = Distributor::query()
+        $distributor = $this->deliveryDomainService->distributorsQuery()
             ->where('supplier_id', $supplierId)
             ->where('status', 'active')
             ->withCount([
@@ -212,7 +222,7 @@ class AgentOrderController extends Controller
     {
         $delayHours = max((int) env('AGENT_ORDER_DELAY_HOURS', 8), 1);
 
-        return Order::query()
+        return $this->ordersDomainService->ordersQuery()
             ->where('supplier_id', $supplierId)
             ->whereIn('status', [
                 Order::STATUS_PENDING,

@@ -8,6 +8,7 @@ use App\Models\Catalog\ProductUnit;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\BranchProductStock;
 use App\Models\Distribution\BranchReplenishmentRequest;
+use App\Modules\Inventory\Services\InventoryDomainService;
 use App\Services\Distribution\BranchInventoryService;
 use App\Services\Notifications\WebAlertService;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ use Illuminate\View\View;
 class InventoryController extends Controller
 {
     public function __construct(
+        private readonly InventoryDomainService $inventoryDomainService,
         private readonly BranchInventoryService $branchInventoryService,
         private readonly WebAlertService $webAlertService,
     ) {}
@@ -93,7 +95,7 @@ class InventoryController extends Controller
     {
         $branch = $this->currentBranch();
 
-        $lowStocks = BranchProductStock::query()
+        $lowStocks = $this->inventoryDomainService->stocksQuery()
             ->with(['product:id,name', 'productUnit:id,product_id,low_stock_threshold'])
             ->where('branch_id', $branch->id)
             ->get()

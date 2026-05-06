@@ -13,12 +13,12 @@ use App\Models\Finance\Account;
 use App\Models\Distribution\BranchAccount;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\Distributor;
+use App\Modules\Orders\Services\OrdersDomainService;
 use App\Services\Distribution\BranchInventoryService;
 use App\Services\Notifications\WebAlertService;
 use App\Services\Pricing\CommissionEngineService;
 use App\Traits\Notifications\SendNotification;
 use App\Models\Orders\Order;
-use App\Models\Orders\OrderStatusHistory;
 use App\Models\Supplier\Supplier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +29,7 @@ class OrderService
     use SendNotification;
 
     public function __construct(
+        private readonly OrdersDomainService $ordersDomainService,
         private readonly WebAlertService $webAlertService,
         private readonly CommissionEngineService $commissionEngineService,
         private readonly BranchInventoryService $branchInventoryService,
@@ -62,7 +63,7 @@ class OrderService
                 $consumer = Consumer::query()->findOrFail($buyerId);
             }
 
-            $order = Order::create([
+            $order = $this->ordersDomainService->ordersQuery()->create([
                 'supplier_id' => $data['supplier_id'],
                 'branch_id' => $data['branch_id'] ?? null,
                 'distributor_id' => $data['distributor_id'] ?? null,
@@ -251,7 +252,7 @@ class OrderService
         if ($previousStatus !== $status && Schema::hasTable('order_status_histories')) {
             [$actorGuard, $actorId] = $this->resolveActorContext();
 
-            OrderStatusHistory::query()->create([
+            $this->ordersDomainService->orderStatusHistoriesQuery()->create([
                 'order_id' => (int) $order->id,
                 'from_status' => $previousStatus,
                 'to_status' => $status,

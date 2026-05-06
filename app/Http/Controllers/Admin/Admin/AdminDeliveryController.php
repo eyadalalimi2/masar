@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Distribution\Distributor;
-use App\Models\Distribution\DistributorLocationLog;
 use App\Models\Finance\Account;
+use App\Modules\Delivery\Services\DeliveryDomainService;
+use App\Modules\Orders\Services\OrdersDomainService;
 use App\Models\Orders\Order;
 use App\Services\Orders\OrderService;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,7 +15,11 @@ use Illuminate\View\View;
 
 class AdminDeliveryController extends Controller
 {
-    public function __construct(private readonly OrderService $orderService) {}
+    public function __construct(
+        private readonly OrderService $orderService,
+        private readonly OrdersDomainService $ordersDomainService,
+        private readonly DeliveryDomainService $deliveryDomainService,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -30,7 +34,7 @@ class AdminDeliveryController extends Controller
             Order::STATUS_OUT_FOR_DELIVERY,
         ];
 
-        $orders = Order::query()
+        $orders = $this->ordersDomainService->ordersQuery()
             ->with([
                 'supplier:id,owner_name,business_name',
                 'branch:id,name,supplier_id',
@@ -45,7 +49,7 @@ class AdminDeliveryController extends Controller
             ->withQueryString();
 
         $orderIds = $orders->getCollection()->pluck('id')->all();
-        $latestLocations = DistributorLocationLog::query()
+        $latestLocations = $this->deliveryDomainService->locationLogsQuery()
             ->whereIn('order_id', $orderIds)
             ->orderByDesc('id')
             ->get()
@@ -58,14 +62,14 @@ class AdminDeliveryController extends Controller
             ->unique()
             ->all();
 
-        $distributorsBySupplier = Distributor::query()
+        $distributorsBySupplier = $this->deliveryDomainService->distributorsQuery()
             ->whereIn('supplier_id', $orderSupplierIds)
             ->where('status', Account::STATUS_ACTIVE)
             ->orderBy('name')
             ->get(['id', 'supplier_id', 'name'])
             ->groupBy('supplier_id');
 
-        $distributorTasks = Distributor::query()
+        $distributorTasks = $this->deliveryDomainService->distributorsQuery()
             ->with(['branch:id,name'])
             ->withCount(['orders as active_orders_count' => function (Builder $query) use ($activeStatuses): void {
                 $query->whereIn('status', $activeStatuses);
@@ -76,13 +80,13 @@ class AdminDeliveryController extends Controller
             ->limit(20)
             ->get(['id', 'name', 'branch_id', 'supplier_id']);
 
-        $branches = \App\Models\Distribution\Branch::query()->orderBy('name')->get(['id', 'name']);
-        $distributorsFilter = Distributor::query()->orderBy('name')->get(['id', 'name']);
+        $branches = $this->deliveryDomainService->branchesQuery()->orderBy('name')->get(['id', 'name']);
+        $distributorsFilter = $this->deliveryDomainService->distributorsQuery()->orderBy('name')->get(['id', 'name']);
 
         $stats = [
-            'active_orders' => Order::query()->whereIn('status', $activeStatuses)->count(),
-            'out_for_delivery' => Order::query()->where('status', Order::STATUS_OUT_FOR_DELIVERY)->count(),
-            'without_distributor' => Order::query()
+            'active_orders' => $this->ordersDomainService->ordersQuery()->whereIn('status', $activeStatuses)->count(),
+            'out_for_delivery' => $this->ordersDomainService->ordersQuery()->where('status', Order::STATUS_OUT_FOR_DELIVERY)->count(),
+            'without_distributor' => $this->ordersDomainService->ordersQuery()
                 ->whereIn('status', $activeStatuses)
                 ->whereNull('distributor_id')
                 ->count(),
@@ -110,7 +114,7 @@ class AdminDeliveryController extends Controller
             : null;
 
         if ($distributorId !== null) {
-            $distributor = Distributor::query()->findOrFail($distributorId);
+            $distributor = $this->deliveryDomainService->distributorsQuery()->findOrFail($distributorId);
 
             if ((int) $distributor->supplier_id !== (int) $order->supplier_id) {
                 return back()->with('error', 'المندوب لا يتبع نفس الوكيل الخاص بالطلب.');

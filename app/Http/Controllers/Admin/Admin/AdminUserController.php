@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Admin\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Distribution\BranchAccount;
 use App\Models\Distribution\Branch;
-use App\Models\Distribution\DistributorAccount;
 use App\Models\Distribution\Distributor;
-use App\Models\Supplier\Agent;
+use App\Modules\Users\Services\UsersDomainService;
 use App\Models\Supplier\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -15,6 +13,8 @@ use Illuminate\View\View;
 
 class AdminUserController extends Controller
 {
+    public function __construct(private readonly UsersDomainService $usersDomainService) {}
+
     public function index(Request $request): View
     {
         $search = trim((string) $request->get('search', ''));
@@ -22,7 +22,7 @@ class AdminUserController extends Controller
         $allowedRoles = ['supplier', 'branch', 'distributor'];
 
         $users = collect()
-            ->concat(Agent::query()->get(['id', 'supplier_id as entity_id', 'name', 'phone', 'created_at'])->map(fn($u) => (object) [
+            ->concat($this->usersDomainService->agentsQuery()->get(['id', 'supplier_id as entity_id', 'name', 'phone', 'created_at'])->map(fn($u) => (object) [
                 'id' => $u->id,
                 'entity_id' => $u->entity_id,
                 'name' => $u->name,
@@ -30,7 +30,7 @@ class AdminUserController extends Controller
                 'role' => 'supplier',
                 'created_at' => $u->created_at,
             ]))
-            ->concat(BranchAccount::query()->get(['id', 'branch_id as entity_id', 'name', 'phone', 'created_at'])->map(fn($u) => (object) [
+            ->concat($this->usersDomainService->branchAccountsQuery()->get(['id', 'branch_id as entity_id', 'name', 'phone', 'created_at'])->map(fn($u) => (object) [
                 'id' => $u->id,
                 'entity_id' => $u->entity_id,
                 'name' => $u->name,
@@ -38,7 +38,7 @@ class AdminUserController extends Controller
                 'role' => 'branch',
                 'created_at' => $u->created_at,
             ]))
-            ->concat(DistributorAccount::query()->get(['id', 'distributor_id as entity_id', 'name', 'phone', 'created_at'])->map(fn($u) => (object) [
+            ->concat($this->usersDomainService->distributorAccountsQuery()->get(['id', 'distributor_id as entity_id', 'name', 'phone', 'created_at'])->map(fn($u) => (object) [
                 'id' => $u->id,
                 'entity_id' => $u->entity_id,
                 'name' => $u->name,
@@ -88,9 +88,3 @@ class AdminUserController extends Controller
         return view('admin.users.index', compact('users', 'supplierProfiles', 'branchProfiles', 'distributorProfiles'));
     }
 }
-
-
-
-
-
-

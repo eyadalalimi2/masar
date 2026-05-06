@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Orders\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Distribution\Distributor;
 use App\Models\Notifications\WebAlert;
+use App\Modules\Orders\Services\OrdersDomainService;
 use App\Models\Orders\Order;
 use App\Services\Lookup\LookupService;
 use App\Services\Notifications\WebAlertService;
@@ -18,6 +19,7 @@ use Illuminate\View\View;
 class AdminOrderController extends Controller
 {
     public function __construct(
+        private readonly OrdersDomainService $ordersDomainService,
         private readonly OrderService $orderService,
         private readonly WebAlertService $webAlertService,
     ) {}
@@ -37,7 +39,7 @@ class AdminOrderController extends Controller
             ->where('title', 'تنبيه تأخير طلبات النظام')
             ->count();
 
-        $orders = Order::query()
+        $orders = $this->ordersDomainService->ordersQuery()
             ->with(['supplier', 'branch', 'distributor', 'buyer', 'items.product'])
             ->when($trashed === 'all', function ($query) {
                 $query->withTrashed();
@@ -188,7 +190,7 @@ class AdminOrderController extends Controller
     {
         $delayHours = max((int) env('ADMIN_ORDER_DELAY_HOURS', 10), 1);
 
-        return Order::query()
+        return $this->ordersDomainService->ordersQuery()
             ->whereIn('status', [
                 Order::STATUS_PENDING,
                 Order::STATUS_APPROVED,

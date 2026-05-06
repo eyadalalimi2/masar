@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Orders\Branch;
 
 use App\Http\Controllers\Controller;
 use App\Models\Distribution\Branch;
-use App\Models\Distribution\Distributor;
+use App\Modules\Delivery\Services\DeliveryDomainService;
+use App\Modules\Orders\Services\OrdersDomainService;
 use App\Models\Notifications\WebAlert;
 use App\Models\Orders\Order;
 use App\Services\Lookup\LookupService;
@@ -19,6 +20,8 @@ use Illuminate\View\View;
 class BranchOrderController extends Controller
 {
     public function __construct(
+        private readonly OrdersDomainService $ordersDomainService,
+        private readonly DeliveryDomainService $deliveryDomainService,
         private readonly OrderService $orderService,
         private readonly WebAlertService $webAlertService,
     ) {}
@@ -29,7 +32,8 @@ class BranchOrderController extends Controller
         $status = (string) $request->query('status', '');
         $delayedOrdersCount = $this->delayedOrdersQuery($branch)->count();
 
-        $orders = Order::with(['supplier', 'distributor', 'buyer', 'items.product', 'latestPayment.paymentMethod', 'latestPayment.account'])
+        $orders = $this->ordersDomainService->ordersQuery()
+            ->with(['supplier', 'distributor', 'buyer', 'items.product', 'latestPayment.paymentMethod', 'latestPayment.account'])
             ->where('branch_id', $branch->id)
             ->when($status !== '', function ($query) use ($status) {
                 $query->where('status', $status);
@@ -47,7 +51,7 @@ class BranchOrderController extends Controller
         abort_unless($order->branch_id === $branch->id, 404);
 
         $order->load(['supplier', 'distributor', 'buyer', 'items.product', 'creator', 'latestPayment.paymentMethod', 'latestPayment.account']);
-        $distributors = Distributor::query()
+        $distributors = $this->deliveryDomainService->distributorsQuery()
             ->where('branch_id', $branch->id)
             ->where('status', 'active')
             ->orderBy('name')
@@ -100,7 +104,7 @@ class BranchOrderController extends Controller
 
         $distributorId = isset($data['distributor_id']) ? (int) $data['distributor_id'] : null;
         if ($distributorId !== null && $distributorId > 0) {
-            $isValidDistributor = Distributor::query()
+            $isValidDistributor = $this->deliveryDomainService->distributorsQuery()
                 ->where('branch_id', $branch->id)
                 ->whereKey($distributorId)
                 ->exists();
@@ -120,7 +124,7 @@ class BranchOrderController extends Controller
         $branch = $this->currentBranch();
         abort_unless($order->branch_id === $branch->id, 404);
 
-        $distributor = Distributor::query()
+        $distributor = $this->deliveryDomainService->distributorsQuery()
             ->where('branch_id', $branch->id)
             ->where('status', 'active')
             ->withCount([
@@ -204,7 +208,7 @@ class BranchOrderController extends Controller
     {
         $delayHours = (int) env('BRANCH_DELAY_ALERT_HOURS', 6);
 
-        return Order::query()
+        return $this->ordersDomainService->ordersQuery()
             ->where('branch_id', $branch->id)
             ->whereIn('status', [
                 Order::STATUS_PENDING,
@@ -230,7 +234,7 @@ class BranchOrderController extends Controller
 
     private function currentBranch(): Branch
     {
-        return Branch::query()
+        return $this->deliveryDomainService->branchesQuery()
             ->where('phone', Auth::user()->phone)
             ->where('status', 'active')
             ->firstOrFail();
