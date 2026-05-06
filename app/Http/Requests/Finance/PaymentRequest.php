@@ -17,7 +17,7 @@ class PaymentRequest extends FormRequest
     {
         return [
             'order_id' => ['required', 'exists:orders,id'],
-            'amount' => ['nullable', 'numeric', 'min:0'],
+            'amount' => ['nullable', 'required_if:payment_type,credit', 'numeric', 'gt:0'],
             'payment_type' => ['required', Rule::in(Payment::PAYMENT_TYPES)],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
@@ -38,8 +38,9 @@ class PaymentRequest extends FormRequest
         return [
             'order_id.required' => 'حقل :attribute مطلوب.',
             'order_id.exists' => 'قيمة :attribute غير صحيحة.',
+            'amount.required_if' => 'حقل :attribute مطلوب عند اختيار الدفع الآجل.',
             'amount.numeric' => 'حقل :attribute يجب أن يكون رقماً.',
-            'amount.min' => 'حقل :attribute يجب ألا يقل عن :min.',
+            'amount.gt' => 'حقل :attribute يجب أن يكون أكبر من :value.',
             'payment_type.required' => 'حقل :attribute مطلوب.',
             'payment_type.in' => 'قيمة :attribute غير صحيحة.',
             'notes.string' => 'حقل :attribute يجب أن يكون نصاً.',
