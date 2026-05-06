@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Services\Audit\AuditLogService;
 use App\Services\Operations\OperationalAlertService;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -63,6 +65,33 @@ class AppServiceProvider extends ServiceProvider
                 ],
                 120
             );
+        });
+
+        Event::listen('eloquent.created: *', function (string $eventName, array $data): void {
+            $model = $data[0] ?? null;
+            if (! $model instanceof Model) {
+                return;
+            }
+
+            app(AuditLogService::class)->logModelCreated($model);
+        });
+
+        Event::listen('eloquent.updated: *', function (string $eventName, array $data): void {
+            $model = $data[0] ?? null;
+            if (! $model instanceof Model) {
+                return;
+            }
+
+            app(AuditLogService::class)->logModelUpdated($model);
+        });
+
+        Event::listen('eloquent.deleted: *', function (string $eventName, array $data): void {
+            $model = $data[0] ?? null;
+            if (! $model instanceof Model) {
+                return;
+            }
+
+            app(AuditLogService::class)->logModelDeleted($model);
         });
 
         Paginator::defaultView('pagination.previous');

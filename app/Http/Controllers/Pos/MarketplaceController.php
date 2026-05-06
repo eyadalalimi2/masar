@@ -254,7 +254,7 @@ class MarketplaceController extends Controller
                 'buyer_id' => $customer->id,
                 'seller_type' => 'branch',
                 'seller_id' => $branch->id,
-                'created_by' => $systemUserId,
+                'created_by_agent_id' => $systemUserId,
                 'items' => $itemsPayload,
             ]);
 
@@ -347,7 +347,7 @@ class MarketplaceController extends Controller
             'buyer_id' => $customer->id,
             'seller_type' => 'branch',
             'seller_id' => $branch->id,
-            'created_by' => $systemUserId,
+            'created_by_agent_id' => $systemUserId,
             'items' => [
                 [
                     'product_id' => $productUnit->product_id,

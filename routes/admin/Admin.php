@@ -112,6 +112,8 @@ Route::middleware(['auth:admin', 'ensure.admin', 'ensure.admin.session', 'ensure
 
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('admin.audit-logs.index');
     Route::get('/audit-logs/{auditLog}', [AdminAuditLogController::class, 'show'])->name('admin.audit-logs.show');
+    Route::get('/system-audit-logs', [\App\Http\Controllers\Admin\Admin\SystemAuditLogController::class, 'index'])
+        ->name('admin.system-audit-logs.index');
 
     Route::get('/notifications', [AdminNotificationController::class, 'index'])->name('admin.notifications.index');
     Route::post('/notifications', [AdminNotificationController::class, 'store'])->name('admin.notifications.store');

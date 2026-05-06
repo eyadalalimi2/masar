@@ -2,6 +2,7 @@
 
 namespace App\Models\Finance;
 
+use App\Models\Concerns\HasPublicUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Account extends Model
 {
     use HasFactory;
+    use HasPublicUuid;
     use SoftDeletes;
 
     public const STATUS_ACTIVE = 'active';
@@ -44,6 +46,13 @@ class Account extends Model
             'password' => 'hashed',
             'balance' => 'decimal:2',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $account): void {
+            $account->ensureUuidAssigned();
+        });
     }
 
     public function owner(): MorphTo

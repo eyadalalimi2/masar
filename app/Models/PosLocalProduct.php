@@ -7,10 +7,11 @@ use App\Models\Catalog\ProductUnit;
 use App\Models\Distribution\Branch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PosLocalProduct extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'pos_account_id',

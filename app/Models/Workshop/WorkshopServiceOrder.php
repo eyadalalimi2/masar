@@ -6,10 +6,11 @@ use App\Models\Consumer;
 use App\Models\Customer\Workshop;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkshopServiceOrder extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     public const STATUS_REQUESTED = 'requested';
     public const STATUS_IN_PROGRESS = 'in_progress';

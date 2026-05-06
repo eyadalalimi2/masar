@@ -71,7 +71,7 @@ class AgentOrderController extends Controller
         $supplierId = Auth::guard('agent')->user()->supplier->id;
         $payload = $request->validated();
         $payload['supplier_id'] = $supplierId;
-        $payload['created_by'] = (int) Auth::guard('agent')->id();
+        $payload['created_by_agent_id'] = (int) Auth::guard('agent')->id();
 
         if (! empty($payload['branch_id'])) {
             Branch::where('supplier_id', $supplierId)->findOrFail($payload['branch_id']);

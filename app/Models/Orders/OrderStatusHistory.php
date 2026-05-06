@@ -4,10 +4,11 @@ namespace App\Models\Orders;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OrderStatusHistory extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'order_id',
@@ -16,14 +17,22 @@ class OrderStatusHistory extends Model
         'actor_guard',
         'actor_id',
         'note',
-        'changed_at',
     ];
 
-    protected function casts(): array
+    /**
+     * Backward-compatibility alias for legacy reads.
+     */
+    public function getChangedAtAttribute()
     {
-        return [
-            'changed_at' => 'datetime',
-        ];
+        return $this->created_at;
+    }
+
+    /**
+     * Backward-compatibility alias for legacy writes.
+     */
+    public function setChangedAtAttribute($value): void
+    {
+        $this->attributes['created_at'] = $value;
     }
 
     public function order()

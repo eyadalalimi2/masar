@@ -2,6 +2,7 @@
 
 namespace App\Models\Customer;
 
+use App\Models\Concerns\HasPublicUuid;
 use App\Models\Finance\CustomerAccount;
 use App\Models\Orders\Order;
 use App\Support\WorkingHoursCodec;
@@ -14,10 +15,12 @@ use Illuminate\Support\Facades\Auth;
 class Customer extends Authenticatable
 {
     use HasFactory;
+    use HasPublicUuid;
     use HasWorkingHoursSchedule;
     use SoftDeletes;
 
     protected $fillable = [
+        'uuid',
         'type',
         'name',
         'phone',
@@ -62,6 +65,10 @@ class Customer extends Authenticatable
 
     protected static function booted(): void
     {
+        static::creating(function (self $customer): void {
+            $customer->ensureUuidAssigned();
+        });
+
         static::saving(function (self $customer): void {
             $value = $customer->getAttribute('working_hours');
 

@@ -20,7 +20,7 @@ class UnifiedPortalApiController extends Controller
 
         return $this->ok($portal, [
             'actor' => [
-                'id' => $actor->id,
+                'uuid' => $this->externalUuid($actor),
                 'name' => $actor->name ?? null,
                 'phone' => $actor->phone ?? null,
                 'status' => $actor->status ?? null,
@@ -38,7 +38,7 @@ class UnifiedPortalApiController extends Controller
 
         return $this->ok($portal, [
             'actor' => [
-                'id' => $actor->id,
+                'uuid' => $this->externalUuid($actor),
                 'name' => $actor->name ?? null,
                 'phone' => $actor->phone ?? null,
             ],
@@ -157,5 +157,16 @@ class UnifiedPortalApiController extends Controller
                 'timestamp' => now()->toISOString(),
             ],
         ], $status);
+    }
+
+    private function externalUuid(object $actor): string
+    {
+        $uuid = $actor->uuid ?? null;
+
+        if (is_string($uuid) && trim($uuid) !== '') {
+            return $uuid;
+        }
+
+        return (string) ($actor->id ?? '');
     }
 }

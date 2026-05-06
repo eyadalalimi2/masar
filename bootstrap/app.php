@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ensure.admin.permission' => \App\Http\Middleware\Admin\EnsureAdminPermission::class,
             'admin.audit' => \App\Http\Middleware\Admin\LogAdminAction::class,
             'audit.action' => \App\Http\Middleware\Audit\LogSensitiveAction::class,
+            'audit.context' => \App\Http\Middleware\Audit\InitializeAuditContext::class,
             'ensure.supplier' => \App\Http\Middleware\Supplier\EnsureSupplier::class,
             'ensure.distributor' => \App\Http\Middleware\Distribution\EnsureDistributor::class,
             'ensure.branch' => \App\Http\Middleware\Distribution\EnsureBranch::class,
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Global audit for non-read requests by authenticated actors.
+        $middleware->append(\App\Http\Middleware\Audit\InitializeAuditContext::class);
         $middleware->append(\App\Http\Middleware\Security\ThrottleSensitiveWrites::class);
         $middleware->append(\App\Http\Middleware\Security\EnsurePortalSensitiveRoutePolicy::class);
         $middleware->append(\App\Http\Middleware\Audit\LogSensitiveAction::class);

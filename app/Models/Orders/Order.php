@@ -9,6 +9,7 @@ use App\Models\Distribution\DistributorOrderEvent;
 use App\Models\Finance\Payment;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\Distributor;
+use App\Models\Concerns\HasPublicUuid;
 use App\Models\Supplier\Agent;
 use App\Models\Supplier\Supplier;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Order extends Model
 {
     use HasFactory;
+    use HasPublicUuid;
     use SoftDeletes;
 
     public const BUYER_TYPE_CUSTOMER = Customer::class;
@@ -44,6 +46,7 @@ class Order extends Model
     ];
 
     protected $fillable = [
+        'uuid',
         'supplier_id',
         'branch_id',
         'distributor_id',
@@ -65,7 +68,7 @@ class Order extends Model
         'status',
         'distributor_stage',
         'payment_method_id',
-        'created_by',
+        'created_by_agent_id',
     ];
 
     protected function casts(): array
@@ -78,6 +81,13 @@ class Order extends Model
             'platform_fixed_fee' => 'decimal:2',
             'payable_total' => 'decimal:2',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $order): void {
+            $order->ensureUuidAssigned();
+        });
     }
 
     public function supplier()
@@ -120,7 +130,23 @@ class Order extends Model
 
     public function creator()
     {
-        return $this->belongsTo(Agent::class, 'created_by');
+        return $this->belongsTo(Agent::class, 'created_by_agent_id');
+    }
+
+    /**
+     * Backward-compatibility alias for legacy reads.
+     */
+    public function getCreatedByAttribute(): ?int
+    {
+        return $this->created_by_agent_id;
+    }
+
+    /**
+     * Backward-compatibility alias for legacy writes.
+     */
+    public function setCreatedByAttribute($value): void
+    {
+        $this->attributes['created_by_agent_id'] = $value;
     }
 
     public function payments()

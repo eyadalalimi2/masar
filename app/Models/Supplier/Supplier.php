@@ -2,6 +2,7 @@
 
 namespace App\Models\Supplier;
 
+use App\Models\Concerns\HasPublicUuid;
 use App\Models\Catalog\Product;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\Distributor;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 class Supplier extends Model
 {
     use HasFactory;
+    use HasPublicUuid;
     use SoftDeletes;
 
     private const WEEK_DAYS = [
@@ -31,6 +33,7 @@ class Supplier extends Model
     protected $table = 'suppliers';
 
     protected $fillable = [
+        'uuid',
         'logo',
         'agent_image',
         'branch_manager_image',
@@ -70,6 +73,10 @@ class Supplier extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $supplier): void {
+            $supplier->ensureUuidAssigned();
+        });
+
         static::saving(function (self $supplier): void {
             $value = $supplier->getAttribute('working_hours');
 

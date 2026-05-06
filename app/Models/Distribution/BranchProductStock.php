@@ -6,10 +6,11 @@ use App\Models\Catalog\Product;
 use App\Models\Catalog\ProductUnit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BranchProductStock extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'branch_id',

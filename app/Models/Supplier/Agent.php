@@ -3,12 +3,13 @@
 namespace App\Models\Supplier;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class Agent extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'agents';
 
@@ -38,9 +39,3 @@ class Agent extends Authenticatable
         return $this->belongsTo(Supplier::class);
     }
 }
-
-
-
-
-
-

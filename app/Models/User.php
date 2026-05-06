@@ -64,9 +64,6 @@ class User extends Authenticatable
 
     public function createdOrders()
     {
-        return $this->hasMany(Order::class, 'created_by');
+        return $this->hasMany(Order::class, 'created_by_agent_id');
     }
 }
-
-
-

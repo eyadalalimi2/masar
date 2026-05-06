@@ -618,7 +618,7 @@ class ConsumerAppController extends Controller
             'buyer_id' => $consumer->id,
             'seller_type' => 'branch',
             'seller_id' => $branch->id,
-            'created_by' => $systemUserId,
+            'created_by_agent_id' => $systemUserId,
             'customer_address_override' => $this->resolveOrderAddressForFulfillment($consumer, $branch, (string) $data['fulfillment']),
             'items' => [
                 [
@@ -848,7 +848,7 @@ class ConsumerAppController extends Controller
             'buyer_id' => $consumer->id,
             'seller_type' => 'branch',
             'seller_id' => $branch->id,
-            'created_by' => $systemUserId,
+            'created_by_agent_id' => $systemUserId,
             'items' => $itemsPayload,
         ]);
 

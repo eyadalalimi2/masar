@@ -7,10 +7,11 @@ use App\Models\Catalog\ProductUnit;
 use App\Models\Distribution\BranchProductStock;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class WorkshopPurchaseOrderItem extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'purchase_order_id',

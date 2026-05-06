@@ -2,6 +2,7 @@
 
 namespace App\Models\Catalog;
 
+use App\Models\Concerns\HasPublicUuid;
 use App\Models\Orders\OrderItem;
 use App\Models\Supplier\Supplier;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Product extends Model
 {
     use HasFactory;
+    use HasPublicUuid;
     use SoftDeletes;
 
     public const STATUS_ACTIVE = 'active';
@@ -22,6 +24,7 @@ class Product extends Model
     ];
 
     protected $fillable = [
+        'uuid',
         'supplier_id',
         'category_id',
         'name',
@@ -37,6 +40,13 @@ class Product extends Model
     protected $casts = [
         'car_models' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $product): void {
+            $product->ensureUuidAssigned();
+        });
+    }
 
     public function supplier()
     {

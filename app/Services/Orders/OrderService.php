@@ -83,7 +83,7 @@ class OrderService
                 'platform_fixed_fee' => $commission['fixed_fee'],
                 'payable_total' => $commission['final_amount'],
                 'status' => Order::STATUS_PENDING,
-                'created_by' => $data['created_by'],
+                'created_by_agent_id' => (int) ($data['created_by_agent_id'] ?? $data['created_by']),
             ]);
 
             foreach ($calculated['items'] as $item) {
@@ -257,7 +257,6 @@ class OrderService
                 'to_status' => $status,
                 'actor_guard' => $actorGuard,
                 'actor_id' => $actorId,
-                'changed_at' => now(),
             ]);
         }
 
