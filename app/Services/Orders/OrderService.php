@@ -4,13 +4,14 @@ namespace App\Services\Orders;
 
 use App\Models\Catalog\Product;
 use App\Models\Catalog\ProductConfiguration;
+use App\Models\Catalog\ProductConfigurationUnit;
 use App\Models\Catalog\ProductUnit;
 use App\Models\Catalog\ProductVariant;
+use App\Models\Catalog\ProductVariantUnit;
 use App\Models\Pos;
 use App\Models\Customer\Workshop;
 use App\Models\Customer\Consumer;
 use App\Models\Customer\Customer;
-use App\Models\Finance\Account;
 use App\Models\Distribution\BranchAccount;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\Distributor;
@@ -119,34 +120,86 @@ class OrderService
             'total' => 0,
         ];
 
+        $productIds = collect($items)->pluck('product_id')->filter()->map(fn($id) => (int) $id)->unique()->values();
+        $productUnitIds = collect($items)->pluck('product_unit_id')->filter()->map(fn($id) => (int) $id)->unique()->values();
+        $productConfigurationIds = collect($items)->pluck('product_configuration_id')->filter()->map(fn($id) => (int) $id)->unique()->values();
+        $productVariantIds = collect($items)->pluck('product_variant_id')->filter()->map(fn($id) => (int) $id)->unique()->values();
+
+        $products = Product::query()
+            ->where('supplier_id', $supplierId)
+            ->whereIn('id', $productIds->all())
+            ->get()
+            ->keyBy('id');
+
+        $productUnits = ProductUnit::query()
+            ->whereIn('id', $productUnitIds->all())
+            ->get()
+            ->keyBy('id');
+
+        $productConfigurations = $productConfigurationIds->isEmpty()
+            ? collect()
+            : ProductConfiguration::query()
+            ->whereIn('id', $productConfigurationIds->all())
+            ->get()
+            ->keyBy('id');
+
+        $productVariants = $productVariantIds->isEmpty()
+            ? collect()
+            : ProductVariant::query()
+            ->whereIn('id', $productVariantIds->all())
+            ->get()
+            ->keyBy('id');
+
+        $unitIds = $productUnits->pluck('unit_id')->map(fn($id) => (int) $id)->unique()->values();
+
+        $configurationUnits = $productConfigurationIds->isEmpty() || $unitIds->isEmpty()
+            ? collect()
+            : ProductConfigurationUnit::query()
+            ->whereIn('product_configuration_id', $productConfigurationIds->all())
+            ->whereIn('unit_id', $unitIds->all())
+            ->get()
+            ->keyBy(fn(ProductConfigurationUnit $unit) => $unit->product_configuration_id . ':' . $unit->unit_id);
+
+        $variantUnits = $productVariantIds->isEmpty() || $unitIds->isEmpty()
+            ? collect()
+            : ProductVariantUnit::query()
+            ->whereIn('product_variant_id', $productVariantIds->all())
+            ->whereIn('unit_id', $unitIds->all())
+            ->get()
+            ->keyBy(fn(ProductVariantUnit $unit) => $unit->product_variant_id . ':' . $unit->unit_id);
+
         foreach ($items as $row) {
-            $product = Product::where('supplier_id', $supplierId)->findOrFail($row['product_id']);
-            $productUnit = ProductUnit::query()
-                ->where('id', (int) $row['product_unit_id'])
-                ->where('product_id', $product->id)
-                ->firstOrFail();
+            $product = $products->get((int) $row['product_id']);
+            if (! $product) {
+                abort(404);
+            }
+
+            $productUnit = $productUnits->get((int) $row['product_unit_id']);
+            if (! $productUnit || (int) $productUnit->product_id !== (int) $product->id) {
+                abort(404);
+            }
 
             $productConfiguration = null;
             if (! empty($row['product_configuration_id'])) {
-                $productConfiguration = ProductConfiguration::query()
-                    ->where('id', (int) $row['product_configuration_id'])
-                    ->where('product_id', $product->id)
-                    ->firstOrFail();
+                $productConfiguration = $productConfigurations->get((int) $row['product_configuration_id']);
+                if (! $productConfiguration || (int) $productConfiguration->product_id !== (int) $product->id) {
+                    abort(404);
+                }
             }
 
             $productVariant = null;
             if ($productConfiguration === null && ! empty($row['product_variant_id'])) {
-                $productVariant = ProductVariant::query()
-                    ->where('id', (int) $row['product_variant_id'])
-                    ->where('product_id', $product->id)
-                    ->firstOrFail();
+                $productVariant = $productVariants->get((int) $row['product_variant_id']);
+                if (! $productVariant || (int) $productVariant->product_id !== (int) $product->id) {
+                    abort(404);
+                }
             }
 
             $quantity = (int) $row['quantity'];
 
             $configurationUnitPrice = null;
             if ($productConfiguration) {
-                $configurationUnit = $productConfiguration->units()->where('unit_id', $productUnit->unit_id)->first();
+                $configurationUnit = $configurationUnits->get((int) $productConfiguration->id . ':' . (int) $productUnit->unit_id);
                 if (! $configurationUnit) {
                     abort(422, 'الوحدة المختارة غير متاحة داخل التهيئة المحددة للمنتج.');
                 }
@@ -158,7 +211,7 @@ class OrderService
 
             $variantUnitPrice = null;
             if ($productVariant) {
-                $variantUnit = $productVariant->variantUnits()->where('unit_id', $productUnit->unit_id)->first();
+                $variantUnit = $variantUnits->get((int) $productVariant->id . ':' . (int) $productUnit->unit_id);
                 if ($variantUnit) {
                     $variantUnitPrice = $customerType === 'b2b'
                         ? (float) $variantUnit->wholesale_price
@@ -250,37 +303,47 @@ class OrderService
             abort(422, 'حالة الطلب غير صحيحة.');
         }
 
-        $order->loadMissing(['branch', 'items.product', 'items.productUnit']);
-        $previousStatus = (string) $order->status;
+        $previousStatus = null;
 
-        if (
-            (int) ($order->branch_id ?? 0) > 0
-            && in_array($status, [Order::STATUS_APPROVED, Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_DELIVERED], true)
-            && $previousStatus !== $status
-        ) {
-            $branch = $order->branch;
+        $order = DB::transaction(function () use ($order, $status, &$previousStatus): Order {
+            $lockedOrder = $this->ordersDomainService->ordersQuery()
+                ->with(['branch', 'items.product', 'items.productUnit', 'distributor.account', 'customer', 'consumer'])
+                ->lockForUpdate()
+                ->findOrFail((int) $order->id);
 
-            if (! $branch instanceof Branch) {
-                abort(422, 'لا يمكن تحديث الحالة: الفرع غير متاح.');
+            $previousStatus = (string) $lockedOrder->status;
+
+            if (
+                (int) ($lockedOrder->branch_id ?? 0) > 0
+                && in_array($status, [Order::STATUS_APPROVED, Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_DELIVERED], true)
+                && $previousStatus !== $status
+            ) {
+                $branch = $lockedOrder->branch;
+
+                if (! $branch instanceof Branch) {
+                    abort(422, 'لا يمكن تحديث الحالة: الفرع غير متاح.');
+                }
+
+                $this->branchInventoryService->ensureOrderStockAvailable($branch, $lockedOrder);
+                $this->branchInventoryService->deductOrderStock($branch, $lockedOrder);
             }
 
-            $this->branchInventoryService->ensureOrderStockAvailable($branch, $order);
-            $this->branchInventoryService->deductOrderStock($branch, $order);
-        }
+            $lockedOrder->update(['status' => $status]);
 
-        $order->update(['status' => $status]);
+            if ($previousStatus !== $status && Schema::hasTable('order_status_histories')) {
+                [$actorGuard, $actorId] = $this->resolveActorContext();
 
-        if ($previousStatus !== $status && Schema::hasTable('order_status_histories')) {
-            [$actorGuard, $actorId] = $this->resolveActorContext();
+                $this->ordersDomainService->orderStatusHistoriesQuery()->create([
+                    'order_id' => (int) $lockedOrder->id,
+                    'from_status' => $previousStatus,
+                    'to_status' => $status,
+                    'actor_guard' => $actorGuard,
+                    'actor_id' => $actorId,
+                ]);
+            }
 
-            $this->ordersDomainService->orderStatusHistoriesQuery()->create([
-                'order_id' => (int) $order->id,
-                'from_status' => $previousStatus,
-                'to_status' => $status,
-                'actor_guard' => $actorGuard,
-                'actor_id' => $actorId,
-            ]);
-        }
+            return $lockedOrder;
+        });
 
         if ($order->distributor?->account && $previousStatus !== $status && in_array($status, [Order::STATUS_APPROVED, Order::STATUS_OUT_FOR_DELIVERY], true)) {
             $this->webAlertService->create(
