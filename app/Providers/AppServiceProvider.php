@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\Orders\DistributorAutoAssigned;
+use App\Listeners\Orders\QueueDispatchAnalyticsListener;
+use App\Listeners\Orders\SendDistributorAutoAssignedAlertListener;
 use App\Services\Audit\AuditLogService;
 use App\Services\Operations\OperationalAlertService;
 use Illuminate\Database\Eloquent\Model;
@@ -66,6 +69,9 @@ class AppServiceProvider extends ServiceProvider
                 120
             );
         });
+
+        Event::listen(DistributorAutoAssigned::class, SendDistributorAutoAssignedAlertListener::class);
+        Event::listen(DistributorAutoAssigned::class, QueueDispatchAnalyticsListener::class);
 
         Event::listen('eloquent.created: *', function (string $eventName, array $data): void {
             $model = $data[0] ?? null;

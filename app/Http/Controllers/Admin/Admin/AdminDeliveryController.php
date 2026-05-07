@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Admin\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Finance\Account;
 use App\Modules\Delivery\Services\DeliveryDomainService;
+use App\Modules\Delivery\Services\SmartDispatchService;
 use App\Modules\Orders\Services\OrdersDomainService;
 use App\Models\Orders\Order;
 use App\Services\Orders\OrderService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AdminDeliveryController extends Controller
@@ -20,6 +20,7 @@ class AdminDeliveryController extends Controller
         private readonly OrderService $orderService,
         private readonly OrdersDomainService $ordersDomainService,
         private readonly DeliveryDomainService $deliveryDomainService,
+        private readonly SmartDispatchService $smartDispatchService,
     ) {}
 
     public function index(Request $request): View
@@ -50,14 +51,7 @@ class AdminDeliveryController extends Controller
             ->withQueryString();
 
         $orderIds = $orders->getCollection()->pluck('id')->all();
-        $latestLocationIds = DB::table('distributor_location_logs')
-            ->whereIn('order_id', $orderIds)
-            ->selectRaw('MAX(id) as id')
-            ->groupBy('order_id')
-            ->pluck('id')
-            ->map(fn($id) => (int) $id)
-            ->values()
-            ->all();
+        $latestLocationIds = $this->smartDispatchService->latestLocationIdsByOrderIds($orderIds);
 
         $latestLocations = $latestLocationIds === []
             ? collect()
