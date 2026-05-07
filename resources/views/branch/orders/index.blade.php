@@ -24,7 +24,6 @@ $statusLabels = [
                 @csrf
                 <button class="btn btn-sm btn-outline-warning">توليد تنبيهات التأخير</button>
             </form>
-            <a href="{{ route('branch.dashboard') }}" class="btn btn-outline-secondary">لوحة الفرع</a>
         </div>
     </div>
 

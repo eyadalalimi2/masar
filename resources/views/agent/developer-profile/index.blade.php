@@ -1,332 +1,275 @@
 @extends('agent.layout.app')
 
+@section('title', 'تفاصيل المطور')
+
 @section('content')
-    <style>
-        .dev-shell {
-            background: radial-gradient(circle at 14% 0%, #e8f2ff 0%, #f8fbff 45%, #ffffff 100%);
-            border: 1px solid #dbe7f7;
-            border-radius: 18px;
-            padding: 18px;
-            overflow: visible;
-        }
+<style>
+    .dev-page-card {
+        border-radius: 1.1rem;
+        overflow: hidden;
+    }
 
+    .dev-hero {
+        background: linear-gradient(125deg, #f1f6ff 0%, #f6fdf8 45%, #fff7ec 100%);
+        border: 1px solid #e2e8f3;
+        border-radius: 1rem;
+        padding: 1.2rem;
+    }
+
+    .dev-avatar-wrap {
+        width: 92px;
+        height: 92px;
+        border-radius: 999px;
+        overflow: hidden;
+        border: 3px solid #ffffff;
+        box-shadow: 0 10px 28px rgba(29, 48, 78, 0.16);
+        flex: 0 0 auto;
+    }
+
+    .dev-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .dev-verify {
+        width: 22px;
+        height: 22px;
+        max-width: 22px;
+        max-height: 22px;
+        object-fit: contain;
+        display: inline-block;
+        vertical-align: middle;
+        flex: 0 0 auto;
+    }
+
+    .dev-verify-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: linear-gradient(135deg, #ecf8ff 0%, #e9f2ff 100%);
+        color: #0d5ea8;
+        border: 1px solid #cfe4fb;
+        border-radius: 999px;
+        padding: 0.24rem 0.58rem;
+        font-size: 0.76rem;
+        font-weight: 800;
+        box-shadow: 0 5px 14px rgba(11, 96, 168, 0.12);
+    }
+
+    .dev-verify-badge i {
+        font-size: 0.9rem;
+        line-height: 1;
+    }
+
+    .social-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 0.75rem;
+        padding: 0.58rem 0.95rem;
+        font-weight: 700;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    }
+
+    .social-btn i {
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .social-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.02);
+    }
+
+    .social-btn-whatsapp {
+        background: linear-gradient(135deg, #25d366 0%, #19b957 100%);
+        color: #ffffff;
+        box-shadow: 0 10px 20px rgba(25, 185, 87, 0.24);
+    }
+
+    .social-btn-whatsapp:hover {
+        color: #ffffff;
+        box-shadow: 0 12px 24px rgba(25, 185, 87, 0.3);
+    }
+
+    .social-btn-facebook {
+        background: linear-gradient(135deg, #1877f2 0%, #115fca 100%);
+        color: #ffffff;
+        box-shadow: 0 10px 20px rgba(17, 95, 202, 0.24);
+    }
+
+    .social-btn-facebook:hover {
+        color: #ffffff;
+        box-shadow: 0 12px 24px rgba(17, 95, 202, 0.3);
+    }
+
+    .dev-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: #ffffff;
+        border: 1px solid #dce6f4;
+        color: #28405f;
+        border-radius: 999px;
+        padding: 0.32rem 0.72rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
+    .dev-stat-box {
+        border: 1px solid #e6edf7;
+        border-radius: 0.9rem;
+        padding: 0.95rem;
+        background: #fff;
+        height: 100%;
+    }
+
+    .dev-stat-value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #173657;
+        line-height: 1.2;
+    }
+
+    .dev-section-card {
+        border: 1px solid #e8edf5;
+        border-radius: 0.9rem;
+        padding: 1rem;
+        height: 100%;
+        background: #fff;
+    }
+
+    .dev-bio {
+        line-height: 1.95;
+        color: #4c5f78;
+        font-size: 0.97rem;
+        margin-bottom: 0;
+    }
+
+    .dev-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .dev-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.55rem;
+        margin-bottom: 0.65rem;
+        color: #3d5068;
+        font-size: 0.93rem;
+    }
+
+    .dev-list li:last-child {
+        margin-bottom: 0;
+    }
+
+    .dev-list i {
+        color: #198754;
+        font-size: 0.95rem;
+        margin-top: 0.14rem;
+    }
+
+    @media (max-width: 767.98px) {
         .dev-hero {
-            border-radius: 16px;
-            background: linear-gradient(135deg, #0a2550 0%, #0f3a79 62%, #1462aa 100%);
-            color: #f8fbff;
-            padding: 20px;
-            margin-bottom: 14px;
-            position: relative;
-            overflow: visible;
-            box-shadow: 0 14px 28px rgba(8, 26, 58, 0.24);
-        }
-
-        .dev-hero::after {
-            content: '';
-            position: absolute;
-            left: -28px;
-            top: -44px;
-            width: 168px;
-            height: 168px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.16);
-            z-index: 0;
-        }
-
-        .dev-hero>* {
-            position: relative;
-            z-index: 1;
-        }
-
-        .dev-tag {
-            display: inline-block;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.16);
-            border: 1px solid rgba(191, 219, 254, 0.5);
-            color: #eff6ff;
-            padding: 6px 12px;
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .dev-profile-head {
-            margin-top: 12px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            flex-wrap: wrap;
+            padding: 1rem;
         }
 
         .dev-avatar-wrap {
-            width: 88px;
-            height: 88px;
-            border-radius: 50%;
-            border: 2px solid rgba(191, 219, 254, 0.75);
-            background: rgba(255, 255, 255, 0.16);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            overflow: visible;
-            box-shadow: 0 8px 18px rgba(8, 26, 58, 0.2);
-            position: relative;
-            cursor: zoom-in;
+            width: 78px;
+            height: 78px;
         }
+    }
+</style>
 
-        .dev-avatar {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .dev-avatar-preview {
-            position: absolute;
-            top: calc(100% + 12px);
-            right: 0;
-            width: 240px;
-            height: 240px;
-            border-radius: 22px;
-            border: 2px solid rgba(191, 219, 254, 0.7);
-            box-shadow: 0 22px 38px rgba(8, 26, 58, 0.35);
-            overflow: hidden;
-            opacity: 0;
-            transform: translateY(8px) scale(0.95);
-            transform-origin: top right;
-            transition: all 0.2s ease;
-            pointer-events: none;
-            z-index: 60;
-            background: #0f172a;
-        }
-
-        .dev-avatar-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .dev-avatar-wrap:hover .dev-avatar-preview {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
-        .dev-avatar-fallback {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 1.7rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            background: linear-gradient(135deg, #1b4f8f 0%, #3b82f6 100%);
-        }
-
-        .dev-profile-meta h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .dev-verified {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
-            color: #ffffff;
-            font-size: 12px;
-            font-weight: 700;
-            box-shadow: 0 6px 14px rgba(14, 116, 219, 0.42);
-        }
-
-        .dev-profile-meta p {
-            margin: 6px 0 0;
-            color: #dbeafe;
-            font-size: 0.95rem;
-        }
-
-        .dev-card {
-            border: 1px solid #dbe7f7;
-            border-radius: 14px;
-            background: #ffffff;
-            padding: 14px;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-            height: 100%;
-        }
-
-        .dev-label {
-            color: #64748b;
-            font-size: 0.84rem;
-            margin-bottom: 4px;
-        }
-
-        .dev-value {
-            color: #0f172a;
-            font-size: 1.06rem;
-            font-weight: 700;
-            word-break: break-word;
-        }
-
-        .dev-bio {
-            border: 1px solid #dbe7f7;
-            border-radius: 14px;
-            background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
-            padding: 14px;
-            margin-top: 12px;
-            color: #334155;
-            line-height: 1.9;
-        }
-
-        .dev-actions {
-            margin-top: 14px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .dev-action-btn {
-            text-decoration: none;
-            border-radius: 10px;
-            padding: 8px 13px;
-            font-weight: 700;
-            font-size: 0.92rem;
-            border: 1px solid transparent;
-            transition: all 0.18s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .dev-action-btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .dev-action-facebook {
-            color: #ffffff;
-            background: linear-gradient(90deg, #1877f2 0%, #1459b8 100%);
-            border-color: rgba(255, 255, 255, 0.35);
-        }
-
-        .dev-action-facebook:hover {
-            color: #ffffff;
-            background: linear-gradient(90deg, #166de0 0%, #124ea3 100%);
-        }
-
-        .dev-action-whatsapp {
-            color: #ffffff;
-            background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
-            border-color: rgba(255, 255, 255, 0.35);
-        }
-
-        .dev-action-whatsapp:hover {
-            color: #ffffff;
-            background: linear-gradient(90deg, #1fb054 0%, #128f40 100%);
-        }
-
-        .dev-back-link {
-            display: inline-block;
-            margin-top: 14px;
-            text-decoration: none;
-            border: 1px solid #b7cdf1;
-            border-radius: 10px;
-            padding: 8px 12px;
-            font-weight: 700;
-            color: #0b2a57;
-            background: #eef5ff;
-        }
-
-        .dev-back-link:hover {
-            background: #e1ecff;
-            color: #092249;
-        }
-
-        @media (max-width: 767.98px) {
-            .dev-profile-head {
-                align-items: flex-start;
-            }
-
-            .dev-avatar-preview {
-                display: none;
-            }
-        }
-    </style>
-
-    <div class="dev-shell">
-        <div class="dev-hero">
-            <span class="dev-tag">مبرمج ومطور المنصه</span>
-            <h1 class="h4 fw-bold mb-1">تفاصيل المطور</h1>
-            <p class="mb-0 text-white-50">صفحة تعريفية بالمطور المسؤول عن تصميم وبرمجة النظام.</p>
-
-            <div class="dev-profile-head">
-                <div class="dev-avatar-wrap" aria-label="صورة المطور">
-                    <img src="{{ asset('assets/images/developer-avatar.JPG') }}" alt="صورة المطور" class="dev-avatar"
-                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                    <div class="dev-avatar-fallback" style="display:none;">EJ</div>
-                    <div class="dev-avatar-preview" aria-hidden="true">
-                        <img src="{{ asset('assets/images/developer-avatar.JPG') }}" alt="معاينة مكبرة لصورة المطور">
+<div class="card border-0 shadow-sm dev-page-card">
+    <div class="card-body p-3 p-md-4 p-lg-5">
+        <section class="dev-hero mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+                <div class="dev-avatar-wrap">
+                    <img src="{{ asset('assets/images/developer-avatar.JPG') }}" alt="صورة المطور" class="dev-avatar">
+                </div>
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h1 class="h4 fw-bold mb-0">اياد جابر العليمي</h1>
+                        <img src="{{ asset('assets/images/viv.png') }}" alt="علامة التحقق" class="dev-verify">
+                    </div>
+                    <p class="text-secondary mb-2">مطور برمجيات | Backend & Mobile</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="dev-chip"><i class="bi bi-code-slash"></i> Laravel</span>
+                        <span class="dev-chip"><i class="bi bi-phone"></i> Android</span>
+                        <span class="dev-chip"><i class="bi bi-diagram-3"></i> API Integration</span>
+                        <span class="dev-chip"><i class="bi bi-brush"></i> UI/UX</span>
                     </div>
                 </div>
+            </div>
 
-                <div class="dev-profile-meta">
-                    <h2>
-                        اياد جابر العليمي
-                        <span class="dev-verified" title="حساب موثق">✓</span>
-                    </h2>
-                    <p>مطور ومهندس نظم - تصميم وتنفيذ حلول أعمال احترافية.</p>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="dev-stat-box">
+                        <small class="text-secondary d-block mb-1">الخبرة العملية</small>
+                        <div class="dev-stat-value">تطوير متكامل للأنظمة</div>
+                    </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="dev-stat-box">
+                        <small class="text-secondary d-block mb-1">التركيز الأساسي</small>
+                        <div class="dev-stat-value">السرعة + الاستقرار + سهولة الاستخدام</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dev-stat-box">
+                        <small class="text-secondary d-block mb-1">مجال العمل</small>
+                        <div class="dev-stat-value">لوحات تحكم، API، وتطبيقات إدارية</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-7">
+                <section class="dev-section-card">
+                    <h2 class="h6 fw-bold mb-3">نبذة احترافية</h2>
+                    <p class="dev-bio">
+                        مطور برمجيات متخصص في بناء حلول رقمية عملية تبدأ من تحليل الاحتياج وتنتهي بمنتج مستقر وسهل
+                        الاستخدام. أعمل على تصميم وتنفيذ بنية Backend قوية باستخدام Laravel مع بناء واجهات إدارة
+                        حديثة وربطها بواجهات API واضحة وقابلة للتوسع. أركز دائمًا على جودة الكود، مرونة التطوير،
+                        وأداء النظام لضمان تجربة استخدام سلسة وموثوقة على الويب والموبايل.
+                    </p>
+                </section>
+            </div>
+            <div class="col-lg-5">
+                <section class="dev-section-card">
+                    <h2 class="h6 fw-bold mb-3">أبرز الخدمات</h2>
+                    <ul class="dev-list">
+                        <li><i class="bi bi-check2-circle"></i><span>تطوير لوحات تحكم احترافية متعددة الصلاحيات.</span>
+                        </li>
+                        <li><i class="bi bi-check2-circle"></i><span>بناء واجهات API آمنة ومنظمة للتطبيقات.</span></li>
+                        <li><i class="bi bi-check2-circle"></i><span>تحسين تجربة المستخدم ورفع جودة الواجهات.</span>
+                        </li>
+                        <li><i class="bi bi-check2-circle"></i><span>صيانة الأنظمة وإصلاح الأعطال وتطوير المزايا.</span>
+                        </li>
+                    </ul>
+                </section>
             </div>
         </div>
 
-        <div class="row g-3">
-            <div class="col-md-6 col-lg-4">
-                <div class="dev-card">
-                    <div class="dev-label">الاسم</div>
-                    <div class="dev-value">اياد جابر العليمي</div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="dev-card">
-                    <div class="dev-label">الدور</div>
-                    <div class="dev-value">مطور ومهندس نظم</div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="dev-card">
-                    <div class="dev-label">المجال</div>
-                    <div class="dev-value">تطوير تطبيقات الويب وإدارة المنصات</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="dev-bio">
-            أنا اياد جابر العليمي، أعمل على بناء أنظمة إدارية وتجارية تركّز على الأداء، الوضوح،
-            وقابلية التوسع. كما أعمل أيضًا على تطوير تطبيقات الجوال وتطبيقات الأعمال المتكاملة.
-            هدفي تقديم تجربة استخدام دقيقة وسلسة تساعد فريق العمل على إدارة العمليات اليومية
-            بسرعة وثقة، مع بنية تقنية مرنة تسهّل التطوير المستقبلي.
-        </div>
-
-        <div class="dev-actions">
-            <a href="https://www.facebook.com/eyadalalimi2018" target="_blank" rel="noopener noreferrer"
-                class="dev-action-btn dev-action-facebook">
-                Facebook
-            </a>
-
+        <div class="d-flex flex-wrap gap-2 mb-3">
             <a href="https://wa.me/967779570601" target="_blank" rel="noopener noreferrer"
-                class="dev-action-btn dev-action-whatsapp">
-                WhatsApp
+                class="social-btn social-btn-whatsapp" aria-label="واتساب">
+                <i class="bi bi-whatsapp"></i>
+                تواصل واتساب
+            </a>
+            <a href="https://www.facebook.com/eyadalalimi2018" target="_blank" rel="noopener noreferrer"
+                class="social-btn social-btn-facebook" aria-label="فيسبوك">
+                <i class="bi bi-facebook"></i>
+                الصفحة الشخصية
             </a>
         </div>
-
-        <a href="{{ route('agent.dashboard') }}" class="dev-back-link">العودة إلى لوحة التحكم</a>
     </div>
+</div>
 @endsection
