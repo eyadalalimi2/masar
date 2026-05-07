@@ -52,6 +52,6 @@ class Distributor extends Model
 
     public function account()
     {
-        return $this->hasOne(DistributorAccount::class);
+        return $this->hasOne(DistributorAccount::class, 'owner_id');
     }
 }

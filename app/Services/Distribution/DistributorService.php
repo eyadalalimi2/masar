@@ -29,7 +29,7 @@ class DistributorService
             ]);
 
             DistributorAccount::create([
-                'distributor_id' => $distributor->id,
+                'owner_id' => $distributor->id,
                 'name' => $data['name'],
                 'phone' => $data['phone'],
                 'password' => $data['password'],
@@ -74,7 +74,7 @@ class DistributorService
             $distributor->update($distributorPayload);
 
             $accountPayload = [
-                'distributor_id' => $distributor->id,
+                'owner_id' => $distributor->id,
                 'name' => $data['name'],
                 'phone' => $data['phone'],
                 'status' => $data['status'],
@@ -85,7 +85,7 @@ class DistributorService
             }
 
             DistributorAccount::query()->updateOrCreate([
-                'distributor_id' => $distributor->id,
+                'owner_id' => $distributor->id,
             ], $accountPayload);
 
             return $distributor->fresh(['supplier', 'branch', 'account']);

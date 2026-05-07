@@ -437,7 +437,7 @@ class OrderService
         return match ($sellerType) {
             'supplier' => Supplier::query()->with('agentAccount')->find($sellerId)?->agentAccount,
             'branch' => ($branch = Branch::query()->find($sellerId))
-                ? BranchAccount::query()->where('branch_id', $branch->id)->first()
+                ? BranchAccount::query()->where('owner_id', $branch->id)->first()
                 : null,
             'distributor' => Distributor::query()->with('account')->find($sellerId)?->account,
             'customer' => ($customer = Customer::query()->find($sellerId))

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Distribution;
 
 use App\Models\Distribution\Distributor;
+use App\Models\Distribution\DistributorAccount;
 use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,19 +17,22 @@ class DistributorRequest extends FormRequest
 
     public function rules(): array
     {
-        $routeDistributor = $this->route('distributor');
-        $distributor = $routeDistributor instanceof Distributor ? $routeDistributor : null;
+        $distributorId = $this->route('distributor')?->id ?? $this->route('distributor');
+        $distributor = $distributorId ? Distributor::query()->find((int) $distributorId) : null;
+        $distributorAccount = $distributorId
+            ? DistributorAccount::query()->where('owner_id', (int) $distributorId)->orderByDesc('id')->first()
+            : null;
         $submittedPhone = trim((string) $this->input('phone', ''));
         $distributorPhone = trim((string) ($distributor?->phone ?? ''));
-        $accountPhone = trim((string) ($distributor?->account?->phone ?? ''));
+        $accountPhone = trim((string) ($distributorAccount?->phone ?? ''));
         $isSameExistingPhone = $submittedPhone !== ''
             && in_array($submittedPhone, [$distributorPhone, $accountPhone], true);
 
         $phoneRules = ['required', 'string', 'max:20'];
         if (! $isSameExistingPhone) {
             $phoneRules[] = new UniqueUserContact('phone', [
-                UniqueUserContact::ignore('accounts', $distributor?->account?->id),
-                UniqueUserContact::ignore('distributors', $distributor?->id),
+                UniqueUserContact::ignore('accounts', $distributorAccount?->id),
+                UniqueUserContact::ignore('distributors', $distributor?->id ?? $distributorId),
             ]);
         }
 

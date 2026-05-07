@@ -67,7 +67,7 @@ class Branch extends Model
 
     public function account()
     {
-        return $this->hasOne(BranchAccount::class);
+        return $this->hasOne(BranchAccount::class, 'owner_id');
     }
 
     public function productStocks()

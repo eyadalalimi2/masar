@@ -10,15 +10,63 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
-    public function getSupplierInventory(int $supplierId, int $perPage = 20): LengthAwarePaginator
+    public function getSupplierInventory(int $supplierId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return ProductUnit::query()
-            ->with(['product:id,supplier_id,name,model,status', 'unit:id,name'])
+        $query = ProductUnit::query()
+            ->with([
+                'product:id,supplier_id,category_id,name,model,image,status',
+                'product.category:id,name',
+                'unit:id,name',
+            ])
             ->whereHas('product', function ($query) use ($supplierId) {
                 $query->where('supplier_id', $supplierId);
             })
-            ->orderByDesc('stock_quantity')
-            ->paginate($perPage);
+            ->orderByDesc('stock_quantity');
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $query->where(function ($inner) use ($search) {
+                $inner->whereHas('product', function ($productQuery) use ($search) {
+                    $productQuery->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('model', 'like', '%' . $search . '%');
+                })->orWhereHas('unit', function ($unitQuery) use ($search) {
+                    $unitQuery->where('name', 'like', '%' . $search . '%');
+                });
+            });
+        }
+
+        $categoryId = (int) ($filters['category_id'] ?? 0);
+        if ($categoryId > 0) {
+            $query->whereHas('product', fn($productQuery) => $productQuery->where('category_id', $categoryId));
+        }
+
+        $unitId = (int) ($filters['unit_id'] ?? 0);
+        if ($unitId > 0) {
+            $query->where('unit_id', $unitId);
+        }
+
+        $stockStatus = trim((string) ($filters['stock_status'] ?? ''));
+        if ($stockStatus === 'low') {
+            $query->where('low_stock_threshold', '>', 0)
+                ->whereColumn('stock_quantity', '<=', 'low_stock_threshold');
+        } elseif ($stockStatus === 'normal') {
+            $query->where(function ($inner) {
+                $inner->where('low_stock_threshold', '<=', 0)
+                    ->orWhereColumn('stock_quantity', '>', 'low_stock_threshold');
+            });
+        }
+
+        $stockFrom = $filters['stock_from'] ?? null;
+        if ($stockFrom !== null && is_numeric($stockFrom)) {
+            $query->where('stock_quantity', '>=', (float) $stockFrom);
+        }
+
+        $stockTo = $filters['stock_to'] ?? null;
+        if ($stockTo !== null && is_numeric($stockTo)) {
+            $query->where('stock_quantity', '<=', (float) $stockTo);
+        }
+
+        return $query->paginate($perPage)->withQueryString();
     }
 
     public function getRecentMovements(int $supplierId, int $limit = 30)

@@ -70,6 +70,11 @@ $statusBadgeClasses = [
             </thead>
             <tbody>
                 @forelse ($requests as $row)
+                @php
+                $canApprove = in_array($row->status, ['pending', 'rejected'], true);
+                $canReject = in_array($row->status, ['pending', 'approved'], true);
+                $canFulfill = in_array($row->status, ['pending', 'approved'], true);
+                @endphp
                 <tr>
                     <td>#{{ $row->id }}</td>
                     <td>{{ $row->branch?->name }}</td>
@@ -88,7 +93,7 @@ $statusBadgeClasses = [
                                 @csrf
                                 @method('PATCH')
                                 <button class="btn btn-sm btn-outline-success"
-                                    {{ in_array($row->status, ['fulfilled']) ? 'disabled' : '' }}>اعتماد</button>
+                                    {{ $canApprove ? '' : 'disabled' }}>اعتماد</button>
                             </form>
 
                             <form method="POST" action="{{ route('agent.replenishment.reject', $row) }}"
@@ -98,7 +103,7 @@ $statusBadgeClasses = [
                                 <input type="text" name="note" class="form-control form-control-sm"
                                     style="max-width:160px;" placeholder="سبب الرفض">
                                 <button class="btn btn-sm btn-outline-danger"
-                                    {{ in_array($row->status, ['fulfilled']) ? 'disabled' : '' }}>رفض</button>
+                                    {{ $canReject ? '' : 'disabled' }}>رفض</button>
                             </form>
 
                             <form method="POST" action="{{ route('agent.replenishment.fulfill', $row) }}"
@@ -109,7 +114,7 @@ $statusBadgeClasses = [
                                     class="form-control form-control-sm" style="max-width:130px;"
                                     placeholder="كمية">
                                 <button class="btn btn-sm btn-primary"
-                                    {{ $row->status === 'fulfilled' ? 'disabled' : '' }}>تزويد</button>
+                                    {{ $canFulfill ? '' : 'disabled' }}>تزويد</button>
                             </form>
                         </div>
                     </td>
