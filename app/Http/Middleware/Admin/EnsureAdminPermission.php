@@ -94,6 +94,7 @@ class EnsureAdminPermission
             str_starts_with($routeName, 'admin.platform-release') => 'settings.manage',
             str_starts_with($routeName, 'admin.admins') => 'roles.manage',
             str_starts_with($routeName, 'admin.roles') => 'roles.manage',
+            str_starts_with($routeName, 'admin.permission-groups') => 'roles.manage',
             str_starts_with($routeName, 'admin.audit-logs') => 'logs.view',
             str_starts_with($routeName, 'admin.notifications') => 'notifications.manage',
             str_starts_with($routeName, 'api.v1.admin.') => 'dashboard.view',

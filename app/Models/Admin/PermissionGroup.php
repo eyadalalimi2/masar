@@ -1,26 +1,29 @@
 <?php
 
-namespace App\Models\Security;
+namespace App\Models\Admin;
 
 use App\Services\Security\PermissionCacheService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PortalAccountPermission extends Model
+class PermissionGroup extends Model
 {
     use HasFactory;
 
+    protected $table = 'admin_permission_groups';
+
     protected $fillable = [
-        'guard_name',
-        'account_id',
-        'permission',
-        'is_granted',
+        'group_key',
+        'name',
+        'display_order',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_granted' => 'boolean',
+            'display_order' => 'integer',
+            'is_active' => 'boolean',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\Admin\Role;
 use App\Models\Finance\Account;
 use App\Services\Lookup\LookupService;
+use App\Services\Security\PermissionCacheService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -67,6 +68,7 @@ class AdminManagementController extends Controller
         ]);
 
         $admin->roles()->sync($data['role_ids'] ?? []);
+        app(PermissionCacheService::class)->bumpVersion();
 
         return redirect()->route('admin.admins.index')->with('success', 'تم إضافة حساب الأدمن بنجاح.');
     }
@@ -109,6 +111,7 @@ class AdminManagementController extends Controller
 
         $admin->save();
         $admin->roles()->sync($data['role_ids'] ?? []);
+        app(PermissionCacheService::class)->bumpVersion();
 
         return redirect()->route('admin.admins.index')->with('success', 'تم تعديل حساب الأدمن بنجاح.');
     }
@@ -134,6 +137,7 @@ class AdminManagementController extends Controller
 
         $admin->roles()->detach();
         $admin->delete();
+        app(PermissionCacheService::class)->bumpVersion();
 
         return redirect()->route('admin.admins.index')->with('success', 'تم حذف حساب الأدمن بنجاح.');
     }

@@ -1,7 +1,10 @@
 @extends('admin.layout.app')
 
 @section('content')
-<h1 class="h4 fw-bold mb-4">إضافة حساب أدمن</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 fw-bold mb-0">إضافة حساب أدمن</h1>
+    <a href="{{ route('admin.roles.admin-assignments') }}" class="btn btn-outline-dark">ربط الأدمنات بالأدوار</a>
+</div>
 
 @if ($errors->any())
 <div class="alert alert-danger">
@@ -57,6 +60,7 @@
     <div class="card-footer bg-white d-flex gap-2">
         <button type="submit" class="btn btn-dark">حفظ</button>
         <a href="{{ route('admin.admins.index') }}" class="btn btn-outline-secondary">إلغاء</a>
+        <a href="{{ route('admin.roles.admin-assignments') }}" class="btn btn-outline-dark">صفحة الربط</a>
     </div>
 </form>
 @endsection

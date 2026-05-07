@@ -106,9 +106,18 @@ Route::middleware(['auth:admin', 'ensure.admin', 'ensure.admin.session', 'ensure
     Route::resource('tasks', AdminTaskController::class, ['as' => 'admin'])->only(['index', 'store', 'edit', 'update', 'destroy']);
 
     Route::get('/roles', [AdminRoleController::class, 'index'])->name('admin.roles.index');
+    Route::get('/roles/permissions', [AdminRoleController::class, 'permissions'])->name('admin.roles.permissions');
+    Route::get('/roles/admin-assignments', [AdminRoleController::class, 'adminAssignments'])->name('admin.roles.admin-assignments');
+    Route::get('/permission-groups', [AdminRoleController::class, 'permissionGroups'])->name('admin.permission-groups.index');
     Route::post('/roles', [AdminRoleController::class, 'store'])->name('admin.roles.store');
     Route::put('/roles/{role}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
+    Route::put('/roles/{role}/profile', [AdminRoleController::class, 'updateProfile'])->name('admin.roles.update-profile');
+    Route::put('/roles/{role}/permissions', [AdminRoleController::class, 'updatePermissions'])->name('admin.roles.update-permissions');
+    Route::put('/roles/{role}/admins', [AdminRoleController::class, 'updateAdmins'])->name('admin.roles.update-admins');
     Route::delete('/roles/{role}', [AdminRoleController::class, 'destroy'])->name('admin.roles.destroy');
+    Route::post('/permission-groups', [AdminRoleController::class, 'storeGroup'])->name('admin.permission-groups.store');
+    Route::put('/permission-groups/{permissionGroup}', [AdminRoleController::class, 'updateGroup'])->name('admin.permission-groups.update');
+    Route::delete('/permission-groups/{permissionGroup}', [AdminRoleController::class, 'destroyGroup'])->name('admin.permission-groups.destroy');
 
     Route::get('/audit-logs', [AdminAuditLogController::class, 'index'])->name('admin.audit-logs.index');
     Route::get('/audit-logs/{auditLog}', [AdminAuditLogController::class, 'show'])->name('admin.audit-logs.show');

@@ -6,7 +6,10 @@
         <h1 class="h4 fw-bold mb-1">إدارة الأدمن</h1>
         <p class="text-muted mb-0">عرض وإضافة وتعديل وحذف حسابات لوحة التحكم</p>
     </div>
-    <a href="{{ route('admin.admins.create') }}" class="btn btn-dark">إضافة أدمن</a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.roles.admin-assignments') }}" class="btn btn-outline-dark">ربط الأدمنات بالأدوار</a>
+        <a href="{{ route('admin.admins.create') }}" class="btn btn-dark">إضافة أدمن</a>
+    </div>
 </div>
 
 @if (session('success'))

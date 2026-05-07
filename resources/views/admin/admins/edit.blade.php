@@ -1,7 +1,10 @@
 @extends('admin.layout.app')
 
 @section('content')
-<h1 class="h4 fw-bold mb-4">تعديل حساب أدمن</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h4 fw-bold mb-0">تعديل حساب أدمن</h1>
+    <a href="{{ route('admin.roles.admin-assignments') }}" class="btn btn-outline-dark">ربط الأدمنات بالأدوار</a>
+</div>
 
 @if (session('error'))
 <div class="alert alert-danger">{{ session('error') }}</div>
@@ -66,6 +69,7 @@
     <div class="card-footer bg-white d-flex gap-2">
         <button type="submit" class="btn btn-dark">تحديث</button>
         <a href="{{ route('admin.admins.index') }}" class="btn btn-outline-secondary">إلغاء</a>
+        <a href="{{ route('admin.roles.admin-assignments') }}" class="btn btn-outline-dark">صفحة الربط</a>
     </div>
 </form>
 @endsection
