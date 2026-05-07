@@ -112,8 +112,11 @@ class AgentSupplierController extends Controller
             'today_sales' => (float) Order::query()->where('supplier_id', $supplier->id)
                 ->whereDate('created_at', now()->toDateString())
                 ->sum(DB::raw('COALESCE(payable_total, total_price)')),
-            'paid_payments' => (float) Payment::query()->where('supplier_id', $supplier->id)
-                ->where('status', 'paid')
+            'paid_payments' => (float) Payment::query()
+                ->where('status', Payment::STATUS_PAID)
+                ->whereHas('order', function ($query) use ($supplier): void {
+                    $query->where('supplier_id', $supplier->id);
+                })
                 ->sum('amount'),
         ];
 

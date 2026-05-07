@@ -90,7 +90,7 @@ class AuthController extends Controller
             'delivered_orders_count' => (clone $ordersQuery)->where('status', Order::STATUS_DELIVERED)->count(),
             'today_orders_count' => (clone $ordersQuery)->whereDate('created_at', $today)->count(),
             'today_collections' => (float) $distributor->payments()
-                ->whereDate('created_at', $today)
+                ->whereDate('order_payments.created_at', $today)
                 ->sum('amount'),
         ];
 

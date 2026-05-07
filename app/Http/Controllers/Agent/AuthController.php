@@ -136,8 +136,11 @@ class AuthController extends Controller
                 ->where('status', Order::STATUS_DELIVERED)
                 ->where('created_at', '>=', $last30Days)
                 ->sum(DB::raw('COALESCE(payable_total, total_price)')),
-            'paid_payments' => (float) Payment::query()->where('supplier_id', $supplier->id)
+            'paid_payments' => (float) Payment::query()
                 ->where('status', Payment::STATUS_PAID)
+                ->whereHas('order', function ($query) use ($supplier): void {
+                    $query->where('supplier_id', $supplier->id);
+                })
                 ->sum('amount'),
             'delayed_orders_count' => $delayedOrdersCount,
         ];

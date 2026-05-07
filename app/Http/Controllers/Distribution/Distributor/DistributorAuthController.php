@@ -76,7 +76,7 @@ class DistributorAuthController extends Controller
                 ->count(),
             'delivered_orders_count' => (clone $ordersQuery)->where('status', Order::STATUS_DELIVERED)->count(),
             'today_collections' => (float) $distributor->payments()
-                ->whereDate('created_at', now()->toDateString())
+                ->whereDate('order_payments.created_at', now()->toDateString())
                 ->sum('amount'),
         ];
 
