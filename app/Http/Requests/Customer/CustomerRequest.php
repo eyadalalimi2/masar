@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Customer;
 
 use App\Models\Customer\Pos;
+use App\Models\Customer\Customer;
 use App\Models\Customer\Workshop;
 use App\Support\OptionLists;
 use App\Support\Validation\UniqueUserContact;
@@ -19,18 +20,30 @@ class CustomerRequest extends FormRequest
     public function rules(): array
     {
         $customerId = $this->route('customer')?->id;
+        $customer = $customerId ? Customer::query()->find((int) $customerId) : null;
         $posAccountId = $customerId ? Pos::query()->where('owner_id', (int) $customerId)->value('id') : null;
         $workshopAccountId = $customerId ? Workshop::query()->where('owner_id', (int) $customerId)->value('id') : null;
+        $posPhone = $customerId ? trim((string) (Pos::query()->where('owner_id', (int) $customerId)->value('phone') ?? '')) : '';
+        $workshopPhone = $customerId ? trim((string) (Workshop::query()->where('owner_id', (int) $customerId)->value('phone') ?? '')) : '';
+        $customerPhone = trim((string) ($customer?->phone ?? ''));
+        $submittedPhone = trim((string) $this->input('phone', ''));
+        $isSameExistingPhone = $submittedPhone !== ''
+            && in_array($submittedPhone, [$customerPhone, $posPhone, $workshopPhone], true);
+
+        $phoneRules = ['required', 'string', 'max:30'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('customers', $customerId),
+                UniqueUserContact::ignore('accounts', $posAccountId),
+                UniqueUserContact::ignore('accounts', $workshopAccountId),
+            ]);
+        }
         $lookupService = app('App\\Services\\Lookup\\LookupService');
 
         return [
             'type' => ['required', Rule::in(OptionLists::CUSTOMER_TYPES)],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [
-                UniqueUserContact::ignore('customers', $customerId),
-                UniqueUserContact::ignore('accounts', $posAccountId),
-                UniqueUserContact::ignore('accounts', $workshopAccountId),
-            ])],
+            'phone' => $phoneRules,
             'password' => [$customerId ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:1500'],

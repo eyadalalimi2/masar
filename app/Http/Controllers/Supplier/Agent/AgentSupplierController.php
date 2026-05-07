@@ -12,7 +12,6 @@ use App\Models\Orders\Order;
 use App\Http\Requests\Supplier\SupplierRequest;
 use App\Http\Requests\Supplier\WorkingHoursRequest;
 use App\Services\Supplier\SupplierService;
-use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -150,20 +149,6 @@ class AgentSupplierController extends Controller
                 'profile' => 'تم توثيق بياناتك من الإدارة، ولا يمكن تعديلها بعد التوثيق.',
             ]);
         }
-
-        $request->validate([
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-                new UniqueUserContact('phone', [
-                    UniqueUserContact::ignore('agents', Auth::guard('agent')->id()),
-                    UniqueUserContact::ignore('suppliers', $supplier->id),
-                ]),
-            ],
-        ], [
-            'phone.unique' => 'رقم الهاتف مستخدم مسبقًا.',
-        ]);
 
         $this->supplierService->updateSupplier(array_merge($request->all(), [
             'supplier_id' => $supplier->id,

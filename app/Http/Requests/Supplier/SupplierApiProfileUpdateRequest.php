@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Supplier;
 
+use App\Models\Supplier\Agent;
+use App\Models\Supplier\Supplier;
 use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +19,35 @@ class SupplierApiProfileUpdateRequest extends FormRequest
     {
         $agentId = (int) (Auth::guard('agent')->id() ?? 0);
         $supplierId = (int) (Auth::guard('agent')->user()?->supplier_id ?? 0);
+        $currentAgent = $agentId > 0 ? Agent::withTrashed()->find($agentId) : null;
+        $currentSupplier = $supplierId > 0 ? Supplier::query()->find($supplierId) : null;
+
+        $submittedPhone = trim((string) $this->input('phone', ''));
+        $submittedEmail = strtolower(trim((string) $this->input('email', '')));
+        $agentPhone = trim((string) ($currentAgent?->phone ?? ''));
+        $supplierPhone = trim((string) ($currentSupplier?->phone ?? ''));
+        $agentEmail = strtolower(trim((string) ($currentAgent?->email ?? '')));
+        $supplierEmail = strtolower(trim((string) ($currentSupplier?->email ?? '')));
+        $isSameExistingPhone = $submittedPhone !== ''
+            && in_array($submittedPhone, [$agentPhone, $supplierPhone], true);
+        $isSameExistingEmail = $submittedEmail !== ''
+            && in_array($submittedEmail, [$agentEmail, $supplierEmail], true);
+
+        $phoneRules = ['required', 'string', 'max:20'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('agents', $agentId > 0 ? $agentId : null),
+                UniqueUserContact::ignore('suppliers', $supplierId > 0 ? $supplierId : null),
+            ]);
+        }
+
+        $emailRules = ['nullable', 'email', 'max:255'];
+        if (! $isSameExistingEmail) {
+            $emailRules[] = new UniqueUserContact('email', [
+                UniqueUserContact::ignore('agents', $agentId > 0 ? $agentId : null),
+                UniqueUserContact::ignore('suppliers', $supplierId > 0 ? $supplierId : null),
+            ]);
+        }
 
         return [
             'logo' => ['nullable', 'image', 'max:4096'],
@@ -33,17 +64,11 @@ class SupplierApiProfileUpdateRequest extends FormRequest
             'commercial_reg_number' => ['nullable', 'string', 'max:255'],
             'license_number' => ['nullable', 'string', 'max:255'],
             'national_id_number' => ['nullable', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20', new UniqueUserContact('phone', [
-                UniqueUserContact::ignore('agents', $agentId > 0 ? $agentId : null),
-                UniqueUserContact::ignore('suppliers', $supplierId > 0 ? $supplierId : null),
-            ])],
+            'phone' => $phoneRules,
             'whatsapp' => ['required', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'gps_location' => ['required', 'string', 'max:255', 'regex:/^\s*-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$/'],
-            'email' => ['nullable', 'email', 'max:255', new UniqueUserContact('email', [
-                UniqueUserContact::ignore('agents', $agentId > 0 ? $agentId : null),
-                UniqueUserContact::ignore('suppliers', $supplierId > 0 ? $supplierId : null),
-            ])],
+            'email' => $emailRules,
         ];
     }
 

@@ -16,11 +16,20 @@ class ConsumerRequest extends FormRequest
     public function rules(): array
     {
         $consumerId = $this->route('consumer')?->id;
+        $currentPhone = trim((string) ($this->route('consumer')?->phone ?? ''));
+        $submittedPhone = trim((string) $this->input('phone', ''));
+        $isSameExistingPhone = $submittedPhone !== '' && $submittedPhone === $currentPhone;
+
+        $phoneRules = ['required', 'string', 'max:30'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [UniqueUserContact::ignore('consumers', $consumerId)]);
+        }
+
         $lookupService = app('App\\Services\\Lookup\\LookupService');
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [UniqueUserContact::ignore('consumers', $consumerId)])],
+            'phone' => $phoneRules,
             'password' => [$consumerId ? 'nullable' : 'required', 'confirmed', 'min:6'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:1500'],

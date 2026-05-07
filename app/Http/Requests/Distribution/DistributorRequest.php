@@ -18,6 +18,19 @@ class DistributorRequest extends FormRequest
     {
         $routeDistributor = $this->route('distributor');
         $distributor = $routeDistributor instanceof Distributor ? $routeDistributor : null;
+        $submittedPhone = trim((string) $this->input('phone', ''));
+        $distributorPhone = trim((string) ($distributor?->phone ?? ''));
+        $accountPhone = trim((string) ($distributor?->account?->phone ?? ''));
+        $isSameExistingPhone = $submittedPhone !== ''
+            && in_array($submittedPhone, [$distributorPhone, $accountPhone], true);
+
+        $phoneRules = ['required', 'string', 'max:20'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('accounts', $distributor?->account?->id),
+                UniqueUserContact::ignore('distributors', $distributor?->id),
+            ]);
+        }
 
         $lookupService = app('App\\Services\\Lookup\\LookupService');
 
@@ -25,15 +38,7 @@ class DistributorRequest extends FormRequest
             'supplier_id' => ['required', 'exists:suppliers,id'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-                new UniqueUserContact('phone', [
-                    UniqueUserContact::ignore('accounts', $distributor?->account?->id),
-                    UniqueUserContact::ignore('distributors', $distributor?->id),
-                ]),
-            ],
+            'phone' => $phoneRules,
             'password' => [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:6'],
             'image' => ['nullable', 'image', 'max:4096'],
             'vehicle_type' => ['nullable', 'string', 'max:255'],

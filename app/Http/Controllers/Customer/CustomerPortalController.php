@@ -181,13 +181,24 @@ class CustomerPortalController extends Controller
     public function updateProfile(Request $request): RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
+        $customerAccount = CustomerAccount::query()->where('owner_id', $customer->id)->first();
+        $submittedPhone = trim((string) $request->input('phone', ''));
+        $customerPhone = trim((string) ($customer->phone ?? ''));
+        $accountPhone = trim((string) ($customerAccount?->phone ?? ''));
+        $isSameExistingPhone = $submittedPhone !== ''
+            && in_array($submittedPhone, [$customerPhone, $accountPhone], true);
+
+        $phoneRules = ['required', 'string', 'max:30'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('customers', $customer->id),
+                UniqueUserContact::ignore('accounts', $customerAccount?->id),
+            ]);
+        }
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [
-                UniqueUserContact::ignore('customers', $customer->id),
-                UniqueUserContact::ignore('accounts', optional(CustomerAccount::query()->where('owner_id', $customer->id)->first())->id),
-            ])],
+            'phone' => $phoneRules,
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
             'gps_location' => ['nullable', 'string', 'max:120'],
