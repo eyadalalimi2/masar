@@ -55,6 +55,36 @@
             <span class="small text-muted">الطرق المضافة من الأدمن تكون Online تلقائيًا</span>
         </div>
 
+        <h3 class="h6 fw-bold mb-2">إضافة طريقة دفع أونلاين</h3>
+        <form method="POST" action="{{ route('admin.payment-methods.store') }}" class="row g-2 align-items-end" enctype="multipart/form-data">
+            @csrf
+            <div class="col-md-4">
+                <label class="form-label">الاسم</label>
+                <input type="text" name="name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الأيقونة</label>
+                <input type="file" name="icon" class="form-control" accept=".png,.jpg,.jpeg,.webp,.svg,image/*">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">النوع</label>
+                <input type="text" class="form-control" value="online" readonly>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الترتيب</label>
+                <input type="number" min="0" name="sort_order" class="form-control" value="0">
+            </div>
+            <div class="col-md-1">
+                <div class="form-check mt-4">
+                    <input class="form-check-input" type="checkbox" value="1" id="newMethodActive" name="is_active" checked>
+                    <label class="form-check-label" for="newMethodActive">فعال</label>
+                </div>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-success" type="submit">إضافة</button>
+            </div>
+        </form>
+
         <div class="table-responsive mb-3">
             <table class="table table-bordered table-sm align-middle mb-0">
                 <thead class="table-light">
@@ -83,10 +113,20 @@
                         </td>
                         <td>
                             @if ($method->type === 'online')
-                            <input type="file" name="icon" form="updateMethod{{ $method->id }}" class="form-control" accept=".png,.jpg,.jpeg,.webp,.svg,image/*">
+                            <input
+                                type="file"
+                                id="methodIcon{{ $method->id }}"
+                                name="icon"
+                                form="updateMethod{{ $method->id }}"
+                                class="d-none"
+                                accept=".png,.jpg,.jpeg,.webp,.svg,image/*">
                             @endif
                             @if ($method->icon_url)
-                            <img src="{{ $method->icon_url }}" alt="icon" class="mt-1 border rounded" style="height:32px; width:32px; object-fit:cover;">
+                            <label for="methodIcon{{ $method->id }}" class="d-inline-block mt-1" style="cursor:pointer;" title="اضغط لتغيير الأيقونة">
+                                <img src="{{ $method->icon_url }}" alt="icon" class="border rounded" style="height:32px; width:32px; object-fit:cover;">
+                            </label>
+                            @elseif ($method->type === 'online')
+                            <label for="methodIcon{{ $method->id }}" class="btn btn-sm btn-outline-secondary mt-1">رفع أيقونة</label>
                             @endif
                         </td>
                         <td>
@@ -139,36 +179,6 @@
                 </tbody>
             </table>
         </div>
-
-        <h3 class="h6 fw-bold mb-2">إضافة طريقة دفع أونلاين</h3>
-        <form method="POST" action="{{ route('admin.payment-methods.store') }}" class="row g-2 align-items-end" enctype="multipart/form-data">
-            @csrf
-            <div class="col-md-4">
-                <label class="form-label">الاسم</label>
-                <input type="text" name="name" class="form-control" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">الأيقونة</label>
-                <input type="file" name="icon" class="form-control" accept=".png,.jpg,.jpeg,.webp,.svg,image/*">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">النوع</label>
-                <input type="text" class="form-control" value="online" readonly>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">الترتيب</label>
-                <input type="number" min="0" name="sort_order" class="form-control" value="0">
-            </div>
-            <div class="col-md-1">
-                <div class="form-check mt-4">
-                    <input class="form-check-input" type="checkbox" value="1" id="newMethodActive" name="is_active" checked>
-                    <label class="form-check-label" for="newMethodActive">فعال</label>
-                </div>
-            </div>
-            <div class="col-12">
-                <button class="btn btn-success" type="submit">إضافة</button>
-            </div>
-        </form>
     </div>
 </div>
 @endsection

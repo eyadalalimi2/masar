@@ -122,6 +122,9 @@ return [
             'customer' => [
                 'customer.logout' => 'session.logout',
                 'customer.profile.*' => 'profile.manage',
+                'customer.wholesale.products.*' => 'profile.manage',
+                'customer.payment-methods.*' => 'profile.manage',
+                'customer.wholesale.orders.*' => 'profile.manage',
             ],
             'consumer' => [
                 'consumer.logout' => 'session.logout',

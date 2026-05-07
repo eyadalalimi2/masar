@@ -50,6 +50,9 @@
         } elseif (str_starts_with($routeName, 'agent.workshops')) {
             $pageTitle = 'إدارة الورش';
             $pageSubtitle = 'إدارة حسابات الورش بشكل مستقل';
+        } elseif (str_starts_with($routeName, 'agent.wholesale-traders')) {
+            $pageTitle = 'إدارة تجار الجملة';
+            $pageSubtitle = 'إدارة حسابات تجار الجملة بشكل مستقل';
         } elseif (str_starts_with($routeName, 'agent.customers')) {
             $pageTitle = 'العملاء التجاريون';
             $pageSubtitle = 'إدارة قاعدة العملاء والعلاقات التجارية';

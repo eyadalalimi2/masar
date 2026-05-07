@@ -4,6 +4,15 @@
 
 @section('content')
 <div class="container-fluid py-2">
+    @php
+    $typeLabel = match ((string) ($customer->type ?? '')) {
+    'wholesale_trader' => 'تاجر الجملة',
+    'retail_store' => 'المحل التجاري',
+    'workshop' => 'ورشة الصيانة',
+    default => 'الحساب',
+    };
+    @endphp
+
     @if (session('status'))
     <div class="alert alert-success">{{ session('status') }}</div>
     @endif
@@ -54,28 +63,28 @@
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">لوجو المحل التجاري</label>
+                <label class="form-label">لوجو {{ $typeLabel }}</label>
                 <input type="file" name="logo" class="form-control" accept="image/*">
                 @if ($customer->logo_url)
-                <img src="{{ $customer->logo_url }}" alt="لوجو المحل" class="rounded border mt-2"
+                <img src="{{ $customer->logo_url }}" alt="لوجو {{ $typeLabel }}" class="rounded border mt-2"
                     style="width:78px;height:78px;object-fit:cover;">
                 @endif
             </div>
 
             <div class="col-md-4">
-                <label class="form-label">صور المحل (متعددة)</label>
+                <label class="form-label">صور {{ $typeLabel }} (متعددة)</label>
                 <input type="file" name="store_images[]" class="form-control" accept="image/*" multiple>
                 <small class="text-muted">رفع صور جديدة سيستبدل الصور الحالية.</small>
             </div>
 
             @if (!empty($customer->store_image_urls))
             <div class="col-12">
-                <label class="form-label">معرض صور المحل الحالي</label>
+                <label class="form-label">معرض الصور الحالي</label>
                 <div class="d-flex flex-wrap gap-2">
                     @foreach ($customer->store_image_urls as $imageIndex => $storeImageUrl)
                     <div class="d-flex flex-column align-items-center gap-1">
                         <a href="{{ $storeImageUrl }}" target="_blank" rel="noopener noreferrer">
-                            <img src="{{ $storeImageUrl }}" alt="صورة المحل" class="rounded border"
+                            <img src="{{ $storeImageUrl }}" alt="صورة {{ $typeLabel }}" class="rounded border"
                                 style="width:78px;height:78px;object-fit:cover;">
                         </a>
                         <form method="POST"

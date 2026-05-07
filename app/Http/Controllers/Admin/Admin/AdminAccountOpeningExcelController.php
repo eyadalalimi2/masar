@@ -43,7 +43,7 @@ class AdminAccountOpeningExcelController extends Controller
     public function previewUpload(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'type' => ['required', 'in:supplier,commercial_store,workshop'],
+            'type' => ['required', 'in:supplier,commercial_store,workshop,wholesale_trader'],
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
             'has_header' => ['nullable', 'boolean'],
         ]);
@@ -104,7 +104,7 @@ class AdminAccountOpeningExcelController extends Controller
 
     private function assertType(string $type): void
     {
-        if (! in_array($type, ['supplier', 'commercial_store', 'workshop'], true)) {
+        if (! in_array($type, ['supplier', 'commercial_store', 'workshop', 'wholesale_trader'], true)) {
             abort(404);
         }
     }

@@ -164,6 +164,10 @@
             animation-delay: 340ms;
         }
 
+        .role-btn:nth-child(8) {
+            animation-delay: 390ms;
+        }
+
         .role-btn:hover {
             transform: translateY(-1px);
             border-color: #aac8ff;
@@ -367,6 +371,14 @@
     'description' => 'سجّل دخولك كمندوب لمتابعة التسليم والتحصيل.',
     'action' => route('distributor.login.submit'),
     'phone' => '770450301',
+    'password' => '123456',
+    ],
+    'wholesale_trader' => [
+    'label' => 'تاجر جملة',
+    'title' => 'لوحة تاجر الجملة',
+    'description' => 'سجّل دخولك كتاجر جملة لإدارة حسابك وطلباتك.',
+    'action' => route('customer.login.submit'),
+    'phone' => '770450701',
     'password' => '123456',
     ],
     'pos' => [

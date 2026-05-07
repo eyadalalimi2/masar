@@ -23,6 +23,22 @@ Route::middleware(['auth:customer', 'ensure.customer'])->group(function () {
     Route::get('/customer/dashboard', [CustomerPortalAuthController::class, 'dashboard'])->name('customer.dashboard');
     Route::get('/customer/orders', [CustomerPortalController::class, 'orders'])->name('customer.orders.index');
     Route::get('/customer/payments', [CustomerPortalController::class, 'payments'])->name('customer.payments.index');
+    Route::get('/customer/wholesale/products', [CustomerPortalController::class, 'wholesaleProducts'])
+        ->name('customer.wholesale.products.index');
+    Route::get('/customer/wholesale/products/create', [CustomerPortalController::class, 'wholesaleProductCreate'])
+        ->name('customer.wholesale.products.create');
+    Route::post('/customer/wholesale/products', [CustomerPortalController::class, 'wholesaleProductStore'])
+        ->name('customer.wholesale.products.store');
+    Route::get('/customer/wholesale/orders', [CustomerPortalController::class, 'wholesaleOrders'])
+        ->name('customer.wholesale.orders.index');
+    Route::patch('/customer/wholesale/orders/{order}/status', [CustomerPortalController::class, 'updateWholesaleOrderStatus'])
+        ->name('customer.wholesale.orders.status');
+    Route::get('/customer/wholesale/customers', [CustomerPortalController::class, 'wholesaleCustomers'])
+        ->name('customer.wholesale.customers.index');
+    Route::get('/customer/payment-methods', [CustomerPortalController::class, 'wholesalePaymentMethods'])
+        ->name('customer.payment-methods.index');
+    Route::put('/customer/payment-methods', [CustomerPortalController::class, 'updateWholesalePaymentMethods'])
+        ->name('customer.payment-methods.update');
     Route::get('/customer/profile', [CustomerPortalController::class, 'profile'])->name('customer.profile.index');
     Route::put('/customer/profile', [CustomerPortalController::class, 'updateProfile'])->name('customer.profile.update');
     Route::delete('/customer/profile/store-images/{imageIndex}', [CustomerPortalController::class, 'destroyStoreImage'])

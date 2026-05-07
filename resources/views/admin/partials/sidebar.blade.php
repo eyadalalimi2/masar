@@ -130,6 +130,14 @@
         </li>
 
         <li class="nav-item">
+            <a class="nav-link {{ request()->is('admin/wholesale-traders*') ? 'active' : '' }}"
+                href="{{ route('admin.wholesale-traders.index') }}">
+                <i class="bi bi-shop"></i>
+                <span>تجار الجملة</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link {{ request()->is('admin/consumers*') ? 'active' : '' }}"
                 href="{{ route('admin.consumers.index') }}">
                 <i class="bi bi-person-badge-fill"></i>

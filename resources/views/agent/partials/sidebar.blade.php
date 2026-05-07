@@ -78,6 +78,12 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="{{ route('agent.wholesale-traders.index') }}"
+                class="nav-link {{ request()->is('agent/wholesale-traders*') ? 'active' : '' }}">
+                <i class="bi bi-shop"></i><span>تجار الجملة</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="{{ route('agent.reports.commercial-stores.index') }}"
                 class="nav-link {{ request()->is('agent/reports*') ? 'active' : '' }}">
                 <i class="bi bi-bar-chart-line-fill"></i><span>التقارير والتحليلات</span>

@@ -4,15 +4,24 @@ namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Supplier\WorkingHoursRequest;
+use App\Models\Catalog\Category;
+use App\Models\Catalog\Product;
+use App\Models\Catalog\ProductUnit;
+use App\Models\Catalog\Unit;
 use App\Models\Finance\CustomerAccount;
 use App\Models\Finance\Payment;
+use App\Models\Finance\PaymentMethod;
+use App\Models\Finance\PortalPaymentMethod;
 use App\Models\Finance\Transaction;
+use App\Models\Customer\Customer as CustomerModel;
 use App\Models\Orders\Order;
 use App\Models\Orders\Order as CustomerOrder;
+use App\Models\Orders\OrderStatusHistory;
 use App\Services\Customer\CustomerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class CustomerPortalController extends Controller
@@ -157,5 +166,309 @@ class CustomerPortalController extends Controller
         }
 
         return back()->with('status', 'تم حذف صورة المحل بنجاح.');
+    }
+
+    public function wholesaleProducts(Request $request): View
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $search = trim((string) $request->query('search', ''));
+        $categoryId = (int) $request->query('category_id', 0);
+
+        $products = Product::query()
+            ->with(['category:id,name', 'productUnits.unit:id,name'])
+            ->where('status', Product::STATUS_ACTIVE)
+            ->whereHas('orderItems.order', function ($query) use ($customer): void {
+                $query->whereIn('seller_type', [CustomerModel::class, 'customer'])
+                    ->where('seller_id', (int) $customer->id);
+            })
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($subQuery) use ($search): void {
+                    $subQuery->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('model', 'like', '%' . $search . '%');
+                });
+            })
+            ->when($categoryId > 0, function ($query) use ($categoryId): void {
+                $query->where('category_id', $categoryId);
+            })
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString();
+
+        $categories = Category::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('customer.wholesale.products.index', compact('customer', 'products', 'categories', 'search', 'categoryId'));
+    }
+
+    public function wholesaleProductCreate(): View
+    {
+        $this->resolveWholesaleTrader();
+
+        $categories = Category::query()->orderBy('name')->get(['id', 'name']);
+        $units = Unit::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('customer.wholesale.products.create', compact('categories', 'units'));
+    }
+
+    public function wholesaleProductStore(Request $request): RedirectResponse
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $supplierId = $this->resolveWholesaleSupplierId($customer);
+        if ($supplierId === null) {
+            return back()->withInput()->withErrors([
+                'product' => 'لا يمكن إضافة منتج الآن لعدم وجود مورد مرتبط بحسابك. تواصل مع الإدارة أولًا.',
+            ]);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:160'],
+            'model' => ['nullable', 'string', 'max:120'],
+            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'description' => ['nullable', 'string', 'max:4000'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'unit_id' => ['required', 'integer', 'exists:units,id'],
+            'wholesale_price' => ['required', 'numeric', 'min:0'],
+            'retail_price' => ['nullable', 'numeric', 'min:0'],
+            'conversion_factor' => ['nullable', 'numeric', 'gt:0'],
+            'stock_quantity' => ['nullable', 'numeric', 'min:0'],
+            'low_stock_threshold' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $imagePath = $request->hasFile('image')
+            ? (string) $request->file('image')->store('products', 'public')
+            : null;
+
+        $product = Product::query()->create([
+            'supplier_id' => $supplierId,
+            'category_id' => (int) $validated['category_id'],
+            'name' => (string) $validated['name'],
+            'model' => (string) ($validated['model'] ?? ''),
+            'description' => $this->normalize($validated['description'] ?? null),
+            'image' => $imagePath,
+            'status' => Product::STATUS_ACTIVE,
+        ]);
+
+        ProductUnit::query()->create([
+            'product_id' => (int) $product->id,
+            'unit_id' => (int) $validated['unit_id'],
+            'wholesale_price' => (float) $validated['wholesale_price'],
+            'retail_price' => (float) ($validated['retail_price'] ?? $validated['wholesale_price']),
+            'conversion_factor' => (float) ($validated['conversion_factor'] ?? 1),
+            'stock_quantity' => (float) ($validated['stock_quantity'] ?? 0),
+            'low_stock_threshold' => (float) ($validated['low_stock_threshold'] ?? 0),
+        ]);
+
+        return redirect()->route('customer.wholesale.products.index')
+            ->with('success', 'تمت إضافة المنتج بنجاح.');
+    }
+
+    public function wholesaleCustomers(Request $request): View
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $search = trim((string) $request->query('search', ''));
+
+        $buyers = Order::query()
+            ->where('seller_type', CustomerModel::class)
+            ->where('seller_id', (int) $customer->id)
+            ->whereNotNull('snapshot_customer_phone')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($subQuery) use ($search): void {
+                    $subQuery->where('snapshot_customer_name', 'like', '%' . $search . '%')
+                        ->orWhere('snapshot_customer_phone', 'like', '%' . $search . '%')
+                        ->orWhere('snapshot_customer_address', 'like', '%' . $search . '%');
+                });
+            })
+            ->selectRaw('snapshot_customer_phone as customer_phone')
+            ->selectRaw('MAX(snapshot_customer_name) as customer_name')
+            ->selectRaw('MAX(snapshot_customer_address) as customer_address')
+            ->selectRaw('COUNT(*) as orders_count')
+            ->selectRaw('SUM(COALESCE(payable_total, total_price)) as total_spent')
+            ->selectRaw('MAX(created_at) as last_order_at')
+            ->groupBy('snapshot_customer_phone')
+            ->orderByDesc('last_order_at')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('customer.wholesale.customers.index', compact('customer', 'buyers', 'search'));
+    }
+
+    public function wholesaleOrders(Request $request): View
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $status = trim((string) $request->query('status', ''));
+        $search = trim((string) $request->query('search', ''));
+
+        $orders = Order::query()
+            ->withCount('items')
+            ->with(['latestPayment:id,order_id,status,payment_type'])
+            ->with(['statusHistories' => function ($query): void {
+                $query->select(['id', 'order_id', 'from_status', 'to_status', 'actor_guard', 'actor_id', 'created_at'])
+                    ->latest('id');
+            }])
+            ->whereIn('seller_type', [CustomerModel::class, 'customer'])
+            ->where('seller_id', (int) $customer->id)
+            ->when(in_array($status, Order::STATUSES, true), function ($query) use ($status): void {
+                $query->where('status', $status);
+            })
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($subQuery) use ($search): void {
+                    $subQuery->where('snapshot_customer_name', 'like', '%' . $search . '%')
+                        ->orWhere('snapshot_customer_phone', 'like', '%' . $search . '%')
+                        ->orWhere('snapshot_customer_address', 'like', '%' . $search . '%');
+                });
+            })
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('customer.wholesale.orders.index', compact('customer', 'orders', 'status', 'search'));
+    }
+
+    public function updateWholesaleOrderStatus(Request $request, Order $order): RedirectResponse
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:approved,out_for_delivery,delivered,cancelled'],
+        ]);
+
+        $isOwnedOrder = in_array((string) $order->seller_type, [CustomerModel::class, 'customer'], true)
+            && (int) $order->seller_id === (int) $customer->id;
+
+        abort_unless($isOwnedOrder, 404);
+
+        $targetStatus = (string) $validated['status'];
+        $currentStatus = (string) $order->status;
+        $allowedTargets = $this->allowedWholesaleOrderTransitions((string) $order->status);
+
+        if (! in_array($targetStatus, $allowedTargets, true)) {
+            return back()->withErrors(['status' => 'لا يمكن تغيير حالة الطلب بهذا الشكل.']);
+        }
+
+        $order->update([
+            'status' => $targetStatus,
+        ]);
+
+        if ($currentStatus !== $targetStatus && Schema::hasTable('order_status_histories')) {
+            OrderStatusHistory::query()->create([
+                'order_id' => (int) $order->id,
+                'from_status' => $currentStatus,
+                'to_status' => $targetStatus,
+                'actor_guard' => 'customer',
+                'actor_id' => (int) $customer->id,
+                'changed_at' => now(),
+            ]);
+        }
+
+        return back()->with('success', 'تم تحديث حالة الطلب بنجاح.');
+    }
+
+    public function wholesalePaymentMethods(): View
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $paymentMethods = PaymentMethod::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $configuredMethods = PortalPaymentMethod::query()
+            ->where('portal_type', 'customer')
+            ->where('portal_id', (int) $customer->id)
+            ->get()
+            ->keyBy('payment_method_id');
+
+        return view('customer.wholesale.payment-methods.index', compact('customer', 'paymentMethods', 'configuredMethods'));
+    }
+
+    public function updateWholesalePaymentMethods(Request $request): RedirectResponse
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $validated = $request->validate([
+            'methods' => ['nullable', 'array'],
+            'methods.*.account_number' => ['nullable', 'string', 'max:120'],
+            'methods.*.account_name' => ['nullable', 'string', 'max:120'],
+            'methods.*.note' => ['nullable', 'string', 'max:1000'],
+            'methods.*.is_enabled' => ['nullable', 'boolean'],
+        ]);
+
+        $paymentMethods = PaymentMethod::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($paymentMethods as $method) {
+            $input = (array) ($validated['methods'][$method->id] ?? []);
+            $isCod = $method->type === 'offline';
+
+            PortalPaymentMethod::query()->updateOrCreate(
+                [
+                    'portal_type' => 'customer',
+                    'portal_id' => (int) $customer->id,
+                    'payment_method_id' => (int) $method->id,
+                ],
+                [
+                    'account_number' => $isCod ? null : $this->normalize($input['account_number'] ?? null),
+                    'account_name' => $isCod ? null : $this->normalize($input['account_name'] ?? null),
+                    'note' => $isCod ? null : $this->normalize($input['note'] ?? null),
+                    'is_enabled' => (bool) ($input['is_enabled'] ?? false),
+                ]
+            );
+        }
+
+        return back()->with('success', 'تم حفظ طرق الدفع المعتمدة بنجاح.');
+    }
+
+    private function resolveWholesaleTrader(): CustomerModel
+    {
+        $customer = Auth::guard('customer')->user();
+
+        abort_unless($customer instanceof CustomerModel, 403);
+        abort_unless($customer->type === 'wholesale_trader', 403);
+
+        return $customer;
+    }
+
+    private function normalize(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function allowedWholesaleOrderTransitions(string $currentStatus): array
+    {
+        return match ($currentStatus) {
+            Order::STATUS_PENDING => [Order::STATUS_APPROVED, Order::STATUS_CANCELLED],
+            Order::STATUS_APPROVED => [Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_CANCELLED],
+            Order::STATUS_OUT_FOR_DELIVERY => [Order::STATUS_DELIVERED],
+            default => [],
+        };
+    }
+
+    private function resolveWholesaleSupplierId(CustomerModel $customer): ?int
+    {
+        $supplierId = Order::query()
+            ->whereIn('seller_type', [CustomerModel::class, 'customer'])
+            ->where('seller_id', (int) $customer->id)
+            ->whereNotNull('supplier_id')
+            ->latest('id')
+            ->value('supplier_id');
+
+        if ($supplierId === null) {
+            return null;
+        }
+
+        return (int) $supplierId;
     }
 }

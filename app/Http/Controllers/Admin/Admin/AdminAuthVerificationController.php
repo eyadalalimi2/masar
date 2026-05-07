@@ -67,7 +67,7 @@ class AdminAuthVerificationController extends Controller
                 ->whereNotNull('verification_requested_by_user_id')
                 ->count()
                 + Customer::query()
-                ->whereIn('type', ['retail_store', 'workshop'])
+                ->whereIn('type', ['retail_store', 'workshop', 'wholesale_trader'])
                 ->where('is_verified', false)
                 ->whereNotNull('verification_requested_at')
                 ->whereNotNull('verification_requested_by_user_id')
@@ -127,7 +127,7 @@ class AdminAuthVerificationController extends Controller
 
     public function verifyCustomer(Customer $customer): RedirectResponse
     {
-        if (! in_array($customer->type, ['retail_store', 'workshop'], true)) {
+        if (! in_array($customer->type, ['retail_store', 'workshop', 'wholesale_trader'], true)) {
             abort(404);
         }
 
@@ -148,7 +148,7 @@ class AdminAuthVerificationController extends Controller
 
     public function unverifyCustomer(Customer $customer): RedirectResponse
     {
-        if (! in_array($customer->type, ['retail_store', 'workshop'], true)) {
+        if (! in_array($customer->type, ['retail_store', 'workshop', 'wholesale_trader'], true)) {
             abort(404);
         }
 
@@ -202,11 +202,17 @@ class AdminAuthVerificationController extends Controller
                 ];
                 $sourceLabel = 'البيانات مرتبطة بحساب المورد الخاص بالوكيل.';
             }
-        } elseif ($type === 'commercial_store' || $type === 'workshop') {
-            $customerType = $type === 'commercial_store' ? 'retail_store' : 'workshop';
+        } elseif (in_array($type, ['commercial_store', 'workshop', 'wholesale_trader'], true)) {
+            $customerType = match ($type) {
+                'commercial_store' => 'retail_store',
+                'workshop' => 'workshop',
+                default => 'wholesale_trader',
+            };
             $customer = null;
 
-            if ((int) ($account->customer_id ?? 0) > 0) {
+            if ($type === 'wholesale_trader' && $account instanceof Customer && $account->type === 'wholesale_trader') {
+                $customer = $account;
+            } elseif ((int) ($account->customer_id ?? 0) > 0) {
                 $customer = Customer::query()
                     ->whereKey((int) $account->customer_id)
                     ->where('type', $customerType)
@@ -261,12 +267,18 @@ class AdminAuthVerificationController extends Controller
                 $selectColumns[] = 'supplier_id';
             }
 
-            if (in_array($key, ['commercial_store', 'workshop'], true)) {
+            if (isset($config['customer_id_select']) && is_string($config['customer_id_select'])) {
+                $selectColumns[] = DB::raw($config['customer_id_select'] . ' as customer_id');
+            } elseif (in_array($key, ['commercial_store', 'workshop', 'wholesale_trader'], true)) {
                 $selectColumns[] = 'customer_id';
             }
 
             $query = $modelClass::query()
                 ->select($selectColumns);
+
+            if (isset($config['customer_type'])) {
+                $query->where('type', $config['customer_type']);
+            }
 
             if ($search !== '') {
                 $query->where(function ($subQuery) use ($search, $nameColumn, $phoneColumn) {
@@ -307,8 +319,12 @@ class AdminAuthVerificationController extends Controller
                 }
             }
 
-            if (in_array($key, ['commercial_store', 'workshop'], true)) {
-                $customerType = $key === 'commercial_store' ? 'retail_store' : 'workshop';
+            if (in_array($key, ['commercial_store', 'workshop', 'wholesale_trader'], true)) {
+                $customerType = match ($key) {
+                    'commercial_store' => 'retail_store',
+                    'workshop' => 'workshop',
+                    default => 'wholesale_trader',
+                };
                 $customerIds = $rows
                     ->pluck('customer_id')
                     ->filter(fn($id) => $id !== null)
@@ -346,7 +362,7 @@ class AdminAuthVerificationController extends Controller
                     } else {
                         $verificationState = 'unverified';
                     }
-                } elseif (in_array($key, ['commercial_store', 'workshop'], true)) {
+                } elseif (in_array($key, ['commercial_store', 'workshop', 'wholesale_trader'], true)) {
                     $customer = $customerVerificationMap->get((int) ($item->customer_id ?? 0));
                     $verificationState = $this->resolveCustomerVerificationState($customer);
                 }
@@ -357,7 +373,7 @@ class AdminAuthVerificationController extends Controller
                     'type_label' => $config['label'],
                     'id' => $item->id,
                     'supplier_id' => $key === 'agent' ? (int) ($item->supplier_id ?? 0) : null,
-                    'customer_id' => in_array($key, ['commercial_store', 'workshop'], true) ? (int) ($item->customer_id ?? 0) : null,
+                    'customer_id' => in_array($key, ['commercial_store', 'workshop', 'wholesale_trader'], true) ? (int) ($item->customer_id ?? 0) : null,
                     'name' => (string) $item->account_name,
                     'phone' => (string) $item->account_phone,
                     'status' => (string) $item->status,
@@ -404,6 +420,14 @@ class AdminAuthVerificationController extends Controller
                 'model' => Workshop::class,
                 'name_column' => 'name',
                 'phone_column' => 'phone',
+            ],
+            'wholesale_trader' => [
+                'label' => 'تاجر جملة',
+                'model' => Customer::class,
+                'name_column' => 'name',
+                'phone_column' => 'phone',
+                'customer_id_select' => 'id',
+                'customer_type' => 'wholesale_trader',
             ],
         ];
     }

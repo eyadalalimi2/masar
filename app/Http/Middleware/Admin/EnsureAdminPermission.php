@@ -72,6 +72,7 @@ class EnsureAdminPermission
             str_starts_with($routeName, 'admin.commercial-stores'),
             str_starts_with($routeName, 'admin.customers'),
             str_starts_with($routeName, 'admin.workshops'),
+            str_starts_with($routeName, 'admin.wholesale-traders'),
             str_starts_with($routeName, 'admin.consumers') => 'organizations.manage',
             str_starts_with($routeName, 'admin.products'),
             str_starts_with($routeName, 'admin.categories'),

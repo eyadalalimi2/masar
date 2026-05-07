@@ -216,6 +216,10 @@ class EnsurePortalSensitiveRoutePolicy
             'customer' => [
                 'customer.logout' => 'session.logout',
                 'customer.profile.*' => 'profile.manage',
+                'customer.wholesale.products.*' => 'profile.manage',
+                'customer.wholesale.orders.*' => 'profile.manage',
+                'customer.wholesale.customers.*' => 'profile.manage',
+                'customer.payment-methods.*' => 'profile.manage',
             ],
             'consumer' => [
                 'consumer.logout' => 'session.logout',

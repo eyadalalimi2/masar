@@ -21,7 +21,7 @@ class CustomerPortalAuthController extends Controller
     public function showLoginForm(): View
     {
         return view('customer.auth.login', [
-            'portalTitle' => 'تسجيل دخول ورش الصيانة والمحلات التجارية',
+            'portalTitle' => 'تسجيل دخول الورش والمحلات التجارية وتجار الجملة',
             'portalSubtitle' => 'الدخول إلى لوحة متابعة طلباتك وحسابك',
             'submitRoute' => 'customer.login.submit',
             'defaultPhone' => '770450401',

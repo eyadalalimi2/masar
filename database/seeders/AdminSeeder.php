@@ -139,6 +139,21 @@ class AdminSeeder extends Seeder
             ]
         );
 
+        Customer::updateOrCreate(
+            ['phone' => '770450701'],
+            [
+                'type' => 'wholesale_trader',
+                'name' => 'تاجر الجملة النخبة',
+                'phone' => '770450701',
+                'password' => Hash::make('123456'),
+                'whatsapp' => '770450702',
+                'address' => 'صنعاء - شارع خولان',
+                'gps_location' => '15.3540,44.2145',
+                'owner_name' => 'عبدالرحمن محمد القيسي',
+                'status' => 'active',
+            ]
+        );
+
         Pos::updateOrCreate(
             ['phone' => '770450601'],
             [

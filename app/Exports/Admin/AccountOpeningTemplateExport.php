@@ -14,7 +14,7 @@ class AccountOpeningTemplateExport implements FromArray, WithHeadings
     {
         return match ($this->type) {
             'supplier' => $this->supplierHeadings(),
-            'commercial_store', 'workshop' => $this->customerHeadings(),
+            'commercial_store', 'workshop', 'wholesale_trader' => $this->customerHeadings(),
             default => [],
         };
     }
@@ -25,6 +25,7 @@ class AccountOpeningTemplateExport implements FromArray, WithHeadings
             'supplier' => [$this->supplierSampleRow()],
             'commercial_store' => [$this->customerSampleRow('retail_store')],
             'workshop' => [$this->customerSampleRow('workshop')],
+            'wholesale_trader' => [$this->customerSampleRow('wholesale_trader')],
             default => [],
         };
     }
@@ -90,7 +91,11 @@ class AccountOpeningTemplateExport implements FromArray, WithHeadings
 
     private function customerSampleRow(string $type): array
     {
-        $name = $type === 'retail_store' ? 'محل تجاري تجريبي' : 'ورشة تجريبية';
+        $name = match ($type) {
+            'retail_store' => 'محل تجاري تجريبي',
+            'wholesale_trader' => 'تاجر جملة تجريبي',
+            default => 'ورشة تجريبية',
+        };
 
         $row = [
             'name' => $name,

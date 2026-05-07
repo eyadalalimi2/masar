@@ -33,4 +33,17 @@ Route::middleware(['auth:agent', 'ensure.supplier'])->group(function () {
             Route::delete('/{customer}', [AgentCustomerController::class, 'workshopsDestroy'])->name('destroy');
             Route::patch('/{customer}/toggle-status', [AgentCustomerController::class, 'workshopsToggleStatus'])->name('toggleStatus');
         });
+
+    Route::prefix('wholesale-traders')
+        ->name('agent.wholesale-traders.')
+        ->middleware('ensure.portal.permission:customers.commercial.manage')
+        ->group(function () {
+            Route::get('/', [AgentCustomerController::class, 'wholesaleTradersIndex'])->name('index');
+            Route::get('/create', [AgentCustomerController::class, 'wholesaleTradersCreate'])->name('create');
+            Route::post('/', [AgentCustomerController::class, 'wholesaleTradersStore'])->name('store');
+            Route::get('/{customer}/edit', [AgentCustomerController::class, 'wholesaleTradersEdit'])->name('edit');
+            Route::put('/{customer}', [AgentCustomerController::class, 'wholesaleTradersUpdate'])->name('update');
+            Route::delete('/{customer}', [AgentCustomerController::class, 'wholesaleTradersDestroy'])->name('destroy');
+            Route::patch('/{customer}/toggle-status', [AgentCustomerController::class, 'wholesaleTradersToggleStatus'])->name('toggleStatus');
+        });
 });

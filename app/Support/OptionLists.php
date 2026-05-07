@@ -6,7 +6,7 @@ final class OptionLists
 {
     public const ACTIVE_INACTIVE = ['active', 'inactive'];
 
-    public const CUSTOMER_TYPES = ['workshop', 'retail_store'];
+    public const CUSTOMER_TYPES = ['workshop', 'retail_store', 'wholesale_trader'];
 
     public const BROADCAST_TARGET_TYPES = ['all', 'suppliers', 'branches', 'distributors', 'customers', 'consumers'];
 

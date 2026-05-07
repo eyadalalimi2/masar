@@ -229,7 +229,7 @@ class AccountOpeningExcelService
 
     private function buildCustomerExport(string $type): AccountOpeningDataExport
     {
-        $customerType = $type === 'workshop' ? 'workshop' : 'retail_store';
+        $customerType = $this->resolveCustomerType($type);
 
         $headings = [
             'name',
@@ -335,7 +335,7 @@ class AccountOpeningExcelService
 
     private function applyCustomerRow(array $row, string $type, string $action): void
     {
-        $customerType = $type === 'workshop' ? 'workshop' : 'retail_store';
+        $customerType = $this->resolveCustomerType($type);
 
         $payload = [
             'type' => $customerType,
@@ -506,12 +506,21 @@ class AccountOpeningExcelService
             return Agent::query()->where('phone', $phone)->exists();
         }
 
-        $customerType = $type === 'workshop' ? 'workshop' : 'retail_store';
+        $customerType = $this->resolveCustomerType($type);
 
         return Customer::query()
             ->where('type', $customerType)
             ->where('phone', $phone)
             ->exists();
+    }
+
+    private function resolveCustomerType(string $type): string
+    {
+        return match ($type) {
+            'workshop' => 'workshop',
+            'wholesale_trader' => 'wholesale_trader',
+            default => 'retail_store',
+        };
     }
 
     private function toAssocRow(array $row, array $header, string $type, bool $hasHeader): array

@@ -4,7 +4,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h4 fw-bold mb-1">إدارة التحقق والتوثيق</h1>
-        <p class="text-muted mb-0">لوحة مستقلة لإدارة حسابات الوكلاء والمحلات التجارية وورش الصيانة فقط.</p>
+        <p class="text-muted mb-0">لوحة مستقلة لإدارة حسابات الوكلاء والمحلات التجارية وتجار الجملة وورش الصيانة.</p>
     </div>
 </div>
 
@@ -66,6 +66,7 @@
                     <option value="">الكل</option>
                     <option value="agent" @selected(request('type')==='agent' )>وكيل</option>
                     <option value="commercial_store" @selected(request('type')==='commercial_store' )>المحلات التجارية</option>
+                    <option value="wholesale_trader" @selected(request('type')==='wholesale_trader' )>تاجر جملة</option>
                     <option value="workshop" @selected(request('type')==='workshop' )>ورشة صيانة</option>
                 </select>
             </div>
@@ -146,7 +147,7 @@
                             </form>
                             @endif
 
-                            @if (in_array($account->type, ['commercial_store', 'workshop'], true) && (int) ($account->customer_id ?? 0) > 0)
+                            @if (in_array($account->type, ['commercial_store', 'workshop', 'wholesale_trader'], true) && (int) ($account->customer_id ?? 0) > 0)
                             @if ($account->verification_state === 'verified')
                             <form method="POST"
                                 action="{{ route('admin.auth-verification.customers.unverify', (int) $account->customer_id) }}"
