@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Distribution;
 
+use App\Models\Distribution\Branch;
 use App\Models\Distribution\BranchAccount;
 use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
@@ -18,20 +19,30 @@ class BranchRequest extends FormRequest
     {
         $branchId = $this->route('branch')?->id ?? $this->route('branch');
         $branchAccountId = $branchId ? BranchAccount::query()->where('owner_id', (int) $branchId)->value('id') : null;
+        $currentBranch = $branchId ? Branch::query()->find((int) $branchId) : null;
+        $currentBranchAccount = $branchId
+            ? BranchAccount::query()->where('owner_id', (int) $branchId)->orderByDesc('id')->first()
+            : null;
+
+        $submittedPhone = trim((string) $this->input('phone', ''));
+        $branchPhone = trim((string) ($currentBranch?->phone ?? ''));
+        $branchAccountPhone = trim((string) ($currentBranchAccount?->phone ?? ''));
+        $isSameExistingPhone = $submittedPhone !== ''
+            && in_array($submittedPhone, [$branchPhone, $branchAccountPhone], true);
+
+        $phoneRules = ['required', 'string', 'max:20'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('branches', $branchId),
+                UniqueUserContact::ignore('accounts', $branchAccountId),
+            ]);
+        }
         $lookupService = app('App\\Services\\Lookup\\LookupService');
 
         return [
             'supplier_id' => ['required', 'exists:suppliers,id'],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-                new UniqueUserContact('phone', [
-                    UniqueUserContact::ignore('branches', $branchId),
-                    UniqueUserContact::ignore('accounts', $branchAccountId),
-                ]),
-            ],
+            'phone' => $phoneRules,
             'branch_manager_name' => ['nullable', 'string', 'max:255'],
             'branch_manager_image' => ['nullable', 'image', 'max:4096'],
             'branch_manager_password' => ['nullable', 'string', 'min:6', 'max:255'],
