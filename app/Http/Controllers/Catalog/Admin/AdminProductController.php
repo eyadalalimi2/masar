@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Catalog\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Catalog\Category;
+use App\Models\Catalog\ProductAttribute;
 use App\Models\Catalog\ProductionYear;
 use App\Models\Catalog\Product;
 use App\Models\Catalog\Unit;
@@ -25,9 +26,21 @@ class AdminProductController extends Controller
         $status = (string) $request->get('status', '');
         $categoryId = (int) $request->get('category_id', 0);
         $trashed = (string) $request->get('trashed', '');
+        $attributeValueIds = collect((array) $request->input('attribute_value_ids', []))
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0)
+            ->unique()
+            ->values();
 
         $products = Product::query()
-            ->with(['supplier', 'category', 'productUnits.unit', 'productVariants.variantValue.type'])
+            ->with([
+                'supplier',
+                'category',
+                'productUnits.unit',
+                'productVariants.variantValue.type',
+                'productConfigurations.attributeValues.attribute',
+                'productConfigurations.units.unit',
+            ])
             ->when($trashed === 'all', function ($query) {
                 $query->withTrashed();
             })
@@ -37,7 +50,17 @@ class AdminProductController extends Controller
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($innerQuery) use ($search) {
                     $innerQuery->where('name', 'like', "%{$search}%")
-                        ->orWhere('model', 'like', "%{$search}%");
+                        ->orWhere('model', 'like', "%{$search}%")
+                        ->orWhereHas('productConfigurations', function ($configurationsQuery) use ($search) {
+                            $configurationsQuery->where('sku', 'like', "%{$search}%")
+                                ->orWhere('barcode', 'like', "%{$search}%")
+                                ->orWhereHas('attributeValues', function ($valuesQuery) use ($search) {
+                                    $valuesQuery->where('value', 'like', "%{$search}%")
+                                        ->orWhereHas('attribute', function ($attributesQuery) use ($search) {
+                                            $attributesQuery->where('name', 'like', "%{$search}%");
+                                        });
+                                });
+                        });
                 });
             })
             ->when($categoryId > 0, function ($query) use ($categoryId) {
@@ -46,13 +69,26 @@ class AdminProductController extends Controller
             ->when(in_array($status, Product::STATUSES, true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
+            ->when($attributeValueIds->isNotEmpty(), function ($query) use ($attributeValueIds) {
+                foreach ($attributeValueIds as $attributeValueId) {
+                    $query->whereHas('productConfigurations.attributeValues', function ($valuesQuery) use ($attributeValueId) {
+                        $valuesQuery->where('product_attribute_values.id', (int) $attributeValueId);
+                    });
+                }
+            })
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
         $categories = Category::query()->orderBy('name')->get(['id', 'name']);
+        $attributes = ProductAttribute::query()
+            ->where('status', Product::STATUS_ACTIVE)
+            ->with(['values' => fn($query) => $query->orderBy('value')])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view('admin.products.index', compact('products', 'categories'));
+        return view('admin.products.index', compact('products', 'categories', 'attributes'));
     }
 
     public function create(): View
@@ -62,13 +98,26 @@ class AdminProductController extends Controller
         $productionYears = ProductionYear::query()->orderBy('year')->pluck('year');
         $units = Unit::orderBy('name')->get(['id', 'name']);
         $variantTypes = VariantType::query()->with('values:id,variant_type_id,value')->orderBy('name')->get(['id', 'name']);
+        $attributes = ProductAttribute::query()
+            ->where('status', Product::STATUS_ACTIVE)
+            ->with(['values' => fn($query) => $query->orderBy('value')])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view('admin.products.create', compact('suppliers', 'categories', 'productionYears', 'units', 'variantTypes'));
+        return view('admin.products.create', compact('suppliers', 'categories', 'productionYears', 'units', 'variantTypes', 'attributes'));
     }
 
     public function show(Product $product): View
     {
-        $product->load(['supplier', 'category', 'productUnits.unit', 'productVariants.variantValue.type']);
+        $product->load([
+            'supplier',
+            'category',
+            'productUnits.unit',
+            'productVariants.variantValue.type',
+            'productConfigurations.attributeValues.attribute',
+            'productConfigurations.units.unit',
+        ]);
 
         return view('admin.products.show', compact('product'));
     }
@@ -82,14 +131,20 @@ class AdminProductController extends Controller
 
     public function edit(Product $product): View
     {
-        $product->load('productUnits', 'productVariants.variantValue.type');
+        $product->load('productUnits', 'productVariants.variantValue.type', 'productConfigurations.attributeValues.attribute', 'productConfigurations.units.unit');
         $suppliers = Supplier::latest()->get(['id', 'owner_name', 'business_name']);
         $categories = Category::orderBy('name')->get(['id', 'name']);
         $productionYears = ProductionYear::query()->orderBy('year')->pluck('year');
         $units = Unit::orderBy('name')->get(['id', 'name']);
         $variantTypes = VariantType::query()->with('values:id,variant_type_id,value')->orderBy('name')->get(['id', 'name']);
+        $attributes = ProductAttribute::query()
+            ->where('status', Product::STATUS_ACTIVE)
+            ->with(['values' => fn($query) => $query->orderBy('value')])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view('admin.products.edit', compact('product', 'suppliers', 'categories', 'productionYears', 'units', 'variantTypes'));
+        return view('admin.products.edit', compact('product', 'suppliers', 'categories', 'productionYears', 'units', 'variantTypes', 'attributes'));
     }
 
     public function update(ProductRequest $request, Product $product): RedirectResponse

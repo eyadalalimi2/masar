@@ -28,8 +28,8 @@ class SupplierRegisterRequest extends FormRequest
         return [
             'owner_name' => ['required', 'string', 'max:255'],
             'branch_manager_name' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['required', 'string', 'max:20', 'unique:users,phone', 'unique:suppliers,phone'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:agents,email', 'unique:suppliers,email'],
+            'phone' => ['required', 'string', 'max:20', 'unique:agents,phone', 'unique:suppliers,phone'],
             'whatsapp' => ['required', 'string', 'max:20'],
             'password' => ['required', 'string', Password::min(6)],
             'business_name' => ['required', 'string', 'max:255'],

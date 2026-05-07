@@ -26,7 +26,12 @@ class SupplierRequest extends FormRequest
 
     public function rules(): array
     {
+        $routeSupplier = $this->route('supplier');
+        $supplierId = is_object($routeSupplier) && isset($routeSupplier->id) ? (int) $routeSupplier->id : null;
+
         $emailUniqueRule = Rule::unique('agents', 'email');
+        $supplierEmailUniqueRule = Rule::unique('suppliers', 'email')->ignore($supplierId);
+        $supplierPhoneUniqueRule = Rule::unique('suppliers', 'phone')->ignore($supplierId);
 
         if (Auth::guard('agent')->check()) {
             $emailUniqueRule = $emailUniqueRule->ignore((int) Auth::guard('agent')->id());
@@ -46,11 +51,11 @@ class SupplierRequest extends FormRequest
             'license_image' => ['nullable', 'image', 'max:4096'],
             'national_id_number' => ['required', 'string', 'max:255'],
             'national_id_image' => ['nullable', 'image', 'max:4096'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'max:20', $supplierPhoneUniqueRule],
             'whatsapp' => ['required', 'string', 'max:20'],
             'address' => ['required', 'string', 'max:500'],
             'gps_location' => ['required', 'string', 'max:255', 'regex:/^\s*-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$/'],
-            'email' => ['nullable', 'email', 'max:255', $emailUniqueRule],
+            'email' => ['nullable', 'email', 'max:255', $emailUniqueRule, $supplierEmailUniqueRule],
             'working_hours' => ['required', 'array'],
             'working_hours.saturday.enabled' => ['required', 'boolean'],
             'working_hours.saturday.start' => ['nullable', 'date_format:H:i', 'required_if:working_hours.saturday.enabled,1'],
@@ -231,6 +236,7 @@ class SupplierRequest extends FormRequest
             'phone.required' => 'حقل :attribute مطلوب.',
             'phone.string' => 'حقل :attribute يجب أن يكون نصاً.',
             'phone.max' => 'حقل :attribute يجب ألا يزيد عن :max حرفًا.',
+            'phone.unique' => 'رقم الهاتف مستخدم مسبقًا.',
             'whatsapp.required' => 'حقل :attribute مطلوب.',
             'whatsapp.string' => 'حقل :attribute يجب أن يكون نصاً.',
             'whatsapp.max' => 'حقل :attribute يجب ألا يزيد عن :max حرفًا.',

@@ -24,6 +24,7 @@ class OrderRequest extends FormRequest
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.product_unit_id' => ['required', 'exists:product_units,id'],
+            'items.*.product_configuration_id' => ['nullable', 'exists:product_configurations,id'],
             'items.*.product_variant_id' => ['nullable', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ];
@@ -67,6 +68,9 @@ class OrderRequest extends FormRequest
                 $productVariantId = isset($item['product_variant_id']) && $item['product_variant_id'] !== ''
                     ? (int) $item['product_variant_id']
                     : 0;
+                $productConfigurationId = isset($item['product_configuration_id']) && $item['product_configuration_id'] !== ''
+                    ? (int) $item['product_configuration_id']
+                    : 0;
 
                 if ($productId <= 0 || $productUnitId <= 0) {
                     continue;
@@ -91,6 +95,34 @@ class OrderRequest extends FormRequest
                         $validator->errors()->add("items.$index.product_variant_id", 'المواصفة المختارة لا تنتمي للمنتج المحدد.');
                     }
                 }
+
+                if ($productConfigurationId > 0) {
+                    $configuration = \App\Models\Catalog\ProductConfiguration::query()
+                        ->where('id', $productConfigurationId)
+                        ->where('product_id', $productId)
+                        ->first();
+
+                    if (! $configuration) {
+                        $validator->errors()->add("items.$index.product_configuration_id", 'التهيئة المختارة لا تنتمي للمنتج المحدد.');
+                        continue;
+                    }
+
+                    $productUnit = \App\Models\Catalog\ProductUnit::query()
+                        ->where('id', $productUnitId)
+                        ->where('product_id', $productId)
+                        ->first();
+
+                    if ($productUnit) {
+                        $configurationHasUnit = \App\Models\Catalog\ProductConfigurationUnit::query()
+                            ->where('product_configuration_id', $productConfigurationId)
+                            ->where('unit_id', (int) $productUnit->unit_id)
+                            ->exists();
+
+                        if (! $configurationHasUnit) {
+                            $validator->errors()->add("items.$index.product_unit_id", 'الوحدة المختارة غير متاحة داخل التهيئة المحددة.');
+                        }
+                    }
+                }
             }
         });
     }
@@ -108,6 +140,7 @@ class OrderRequest extends FormRequest
             'items' => 'المنتجات',
             'items.*.product_id' => 'المنتج',
             'items.*.product_unit_id' => 'وحدة المنتج',
+            'items.*.product_configuration_id' => 'تهيئة المنتج',
             'items.*.product_variant_id' => 'مواصفة المنتج',
             'items.*.quantity' => 'الكمية',
         ];
@@ -136,6 +169,7 @@ class OrderRequest extends FormRequest
             'items.*.product_id.exists' => 'قيمة المنتج غير صحيحة.',
             'items.*.product_unit_id.required' => 'حقل وحدة المنتج مطلوب.',
             'items.*.product_unit_id.exists' => 'قيمة وحدة المنتج غير صحيحة.',
+            'items.*.product_configuration_id.exists' => 'قيمة تهيئة المنتج غير صحيحة.',
             'items.*.product_variant_id.exists' => 'قيمة مواصفة المنتج غير صحيحة.',
             'items.*.quantity.required' => 'حقل الكمية مطلوب.',
             'items.*.quantity.integer' => 'الكمية يجب أن تكون رقماً صحيحاً.',

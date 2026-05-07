@@ -16,7 +16,7 @@
 <form method="GET" action="{{ route('admin.products.index') }}" class="card border-0 shadow-sm mb-3">
     <div class="card-body p-3">
         <div class="row g-2 align-items-end">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label class="form-label mb-1">بحث</label>
                 <input type="text" name="search" class="form-control" value="{{ request('search') }}"
                     placeholder="اسم المنتج أو الموديل">
@@ -46,6 +46,20 @@
                     <option value="" @selected(request('trashed')==='' )>الافتراضي</option>
                     <option value="all" @selected(request('trashed')==='all' )>الكل</option>
                     <option value="only" @selected(request('trashed')==='only' )>المحذوف فقط</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label mb-1">فلترة بالخصائص</label>
+                <select name="attribute_value_ids[]" class="form-select" multiple size="4">
+                    @foreach ($attributes as $attribute)
+                    <optgroup label="{{ $attribute->name }}">
+                        @foreach ($attribute->values as $value)
+                        <option value="{{ $value->id }}" @selected(in_array((int) $value->id, collect((array) request('attribute_value_ids', []))->map(fn($id) => (int) $id)->all(), true))>
+                            {{ $value->value }}
+                        </option>
+                        @endforeach
+                    </optgroup>
+                    @endforeach
                 </select>
             </div>
             <div class="col-md-2">
@@ -113,7 +127,17 @@ $productsTrashedCount = $products->getCollection()->filter(fn($item) => $item->t
                     @endif
                 </td>
                 <td>
-                    @if ($product->productVariants->isNotEmpty())
+                    @if ($product->productConfigurations->isNotEmpty())
+                    @foreach ($product->productConfigurations as $configuration)
+                    <div class="small">
+                        @if ($configuration->attributeValues->isNotEmpty())
+                        {{ $configuration->attributeValues->map(fn($attributeValue) => ($attributeValue->attribute?->name ?? 'خاصية') . ': ' . $attributeValue->value)->implode(' | ') }}
+                        @else
+                        {{ $configuration->name ?: 'تهيئة افتراضية' }}
+                        @endif
+                    </div>
+                    @endforeach
+                    @elseif ($product->productVariants->isNotEmpty())
                     @foreach ($product->productVariants as $variant)
                     <div class="small">
                         {{ $variant->variantValue?->type?->name ?? 'المواصفة' }}:

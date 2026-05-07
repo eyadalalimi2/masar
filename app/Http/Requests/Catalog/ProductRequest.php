@@ -34,6 +34,27 @@ class ProductRequest extends FormRequest
             'variants' => ['nullable', 'array'],
             'variants.*.variant_type_id' => ['required_with:variants.*.variant_value_id', 'exists:variant_types,id'],
             'variants.*.variant_value_id' => ['required_with:variants.*.variant_type_id', 'exists:variant_values,id'],
+            'attributes' => ['nullable', 'array'],
+            'attributes.*.id' => ['nullable', 'integer', 'exists:product_attributes,id'],
+            'attributes.*.name' => ['required_without:attributes.*.id', 'string', 'max:120'],
+            'attributes.*.values' => ['required', 'array', 'min:1'],
+            'attributes.*.values.*.id' => ['nullable', 'integer', 'exists:product_attribute_values,id'],
+            'attributes.*.values.*.value' => ['required_without:attributes.*.values.*.id', 'string', 'max:160'],
+            'configurations' => ['nullable', 'array'],
+            'configurations.*.name' => ['nullable', 'string', 'max:255'],
+            'configurations.*.sku' => ['nullable', 'string', 'max:120'],
+            'configurations.*.barcode' => ['nullable', 'string', 'max:120'],
+            'configurations.*.is_default' => ['nullable', 'boolean'],
+            'configurations.*.status' => ['nullable', 'string', 'max:32'],
+            'configurations.*.attribute_value_ids' => ['nullable', 'array'],
+            'configurations.*.attribute_value_ids.*' => ['integer', 'exists:product_attribute_values,id'],
+            'configurations.*.units' => ['nullable', 'array'],
+            'configurations.*.units.*.unit_id' => ['required', 'exists:units,id'],
+            'configurations.*.units.*.wholesale_price' => ['required', 'numeric', 'min:0'],
+            'configurations.*.units.*.retail_price' => ['required', 'numeric', 'min:0'],
+            'configurations.*.units.*.conversion_factor' => ['nullable', 'numeric', 'gt:0'],
+            'configurations.*.units.*.stock_quantity' => ['nullable', 'numeric', 'min:0'],
+            'configurations.*.units.*.low_stock_threshold' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -116,6 +137,38 @@ class ProductRequest extends FormRequest
             if (count($variantValueIds) !== count(array_unique($variantValueIds))) {
                 $validator->errors()->add('variants', 'لا يمكن تكرار نفس قيمة المواصفة في المنتج.');
             }
+
+            $configurations = (array) $this->input('configurations', []);
+            $configurationKeys = [];
+
+            foreach ($configurations as $index => $configuration) {
+                $attributeValueIds = collect((array) ($configuration['attribute_value_ids'] ?? []))
+                    ->map(fn($id) => (int) $id)
+                    ->filter(fn($id) => $id > 0)
+                    ->unique()
+                    ->sort()
+                    ->values();
+
+                $configurationKey = $attributeValueIds->implode('-');
+                if ($configurationKey !== '') {
+                    $configurationKeys[] = $configurationKey;
+                }
+
+                $unitRows = (array) ($configuration['units'] ?? []);
+                $unitIds = collect($unitRows)
+                    ->map(fn($row) => (int) ($row['unit_id'] ?? 0))
+                    ->filter(fn($id) => $id > 0)
+                    ->values()
+                    ->all();
+
+                if (count($unitIds) !== count(array_unique($unitIds))) {
+                    $validator->errors()->add("configurations.$index.units", 'لا يمكن تكرار نفس الوحدة داخل نفس التهيئة.');
+                }
+            }
+
+            if (count($configurationKeys) !== count(array_unique($configurationKeys))) {
+                $validator->errors()->add('configurations', 'لا يمكن تكرار نفس تركيبة القيم أكثر من مرة.');
+            }
         });
     }
 
@@ -139,6 +192,13 @@ class ProductRequest extends FormRequest
             'variants' => 'المواصفات',
             'variants.*.variant_type_id' => 'نوع المواصفة',
             'variants.*.variant_value_id' => 'قيمة المواصفة',
+            'attributes' => 'الخصائص',
+            'attributes.*.name' => 'اسم الخاصية',
+            'attributes.*.values' => 'قيم الخاصية',
+            'configurations' => 'التهيئات',
+            'configurations.*.attribute_value_ids' => 'قيم الخصائص',
+            'configurations.*.units' => 'وحدات التهيئة',
+            'configurations.*.units.*.unit_id' => 'الوحدة',
         ];
     }
 
@@ -182,6 +242,9 @@ class ProductRequest extends FormRequest
             'variants.*.variant_type_id.exists' => 'قيمة :attribute غير صحيحة.',
             'variants.*.variant_value_id.required_with' => 'حقل :attribute مطلوب.',
             'variants.*.variant_value_id.exists' => 'قيمة :attribute غير صحيحة.',
+            'attributes.array' => 'صيغة الخصائص غير صحيحة.',
+            'attributes.*.values.required' => 'يجب إدخال قيمة واحدة على الأقل لكل خاصية.',
+            'configurations.array' => 'صيغة التهيئات غير صحيحة.',
         ];
     }
 }

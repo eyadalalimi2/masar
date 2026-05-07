@@ -3,6 +3,7 @@
 namespace App\Services\Orders;
 
 use App\Models\Catalog\Product;
+use App\Models\Catalog\ProductConfiguration;
 use App\Models\Catalog\ProductUnit;
 use App\Models\Catalog\ProductVariant;
 use App\Models\Pos;
@@ -125,8 +126,16 @@ class OrderService
                 ->where('product_id', $product->id)
                 ->firstOrFail();
 
+            $productConfiguration = null;
+            if (! empty($row['product_configuration_id'])) {
+                $productConfiguration = ProductConfiguration::query()
+                    ->where('id', (int) $row['product_configuration_id'])
+                    ->where('product_id', $product->id)
+                    ->firstOrFail();
+            }
+
             $productVariant = null;
-            if (! empty($row['product_variant_id'])) {
+            if ($productConfiguration === null && ! empty($row['product_variant_id'])) {
                 $productVariant = ProductVariant::query()
                     ->where('id', (int) $row['product_variant_id'])
                     ->where('product_id', $product->id)
@@ -134,6 +143,18 @@ class OrderService
             }
 
             $quantity = (int) $row['quantity'];
+
+            $configurationUnitPrice = null;
+            if ($productConfiguration) {
+                $configurationUnit = $productConfiguration->units()->where('unit_id', $productUnit->unit_id)->first();
+                if (! $configurationUnit) {
+                    abort(422, 'الوحدة المختارة غير متاحة داخل التهيئة المحددة للمنتج.');
+                }
+
+                $configurationUnitPrice = $customerType === 'b2b'
+                    ? (float) $configurationUnit->wholesale_price
+                    : (float) $configurationUnit->retail_price;
+            }
 
             $variantUnitPrice = null;
             if ($productVariant) {
@@ -145,7 +166,7 @@ class OrderService
                 }
             }
 
-            $unitPrice = $variantUnitPrice ?? ($customerType === 'b2b'
+            $unitPrice = $configurationUnitPrice ?? $variantUnitPrice ?? ($customerType === 'b2b'
                 ? (float) $productUnit->wholesale_price
                 : (float) $productUnit->retail_price);
 

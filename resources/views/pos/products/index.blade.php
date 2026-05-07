@@ -25,7 +25,7 @@
 
 <form method="GET" action="{{ route('pos.products.index') }}" class="table-wrap reveal rv1 mb-3">
     <div class="card-body row g-2 align-items-end">
-        <div class="col-md-8">
+        <div class="col-md-6">
             <label class="form-label mb-1">بحث</label>
             <input type="text" name="search" class="form-control" value="{{ request('search') }}" placeholder="اسم المنتج أو الموديل">
         </div>
@@ -38,7 +38,22 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-md-2"><button class="btn btn-dark w-100">تطبيق</button></div>
+        <div class="col-md-2">
+            <label class="form-label mb-1">الخصائص</label>
+            <select name="attribute_value_ids[]" class="form-select" multiple size="4">
+                @foreach ($attributes as $attribute)
+                <optgroup label="{{ $attribute->name }}">
+                    @foreach ($attribute->values as $value)
+                    <option value="{{ $value->id }}" @selected(in_array((int) $value->id, collect((array) request('attribute_value_ids', []))->map(fn($id) => (int) $id)->all(), true))>
+                        {{ $value->value }}
+                    </option>
+                    @endforeach
+                </optgroup>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-1"><button class="btn btn-dark w-100">تطبيق</button></div>
+        <div class="col-md-1"><a href="{{ route('pos.products.index') }}" class="btn btn-outline-secondary w-100">مسح</a></div>
     </div>
 </form>
 
@@ -78,11 +93,23 @@
                         @endforelse
                     </td>
                     <td>
+                        @if ($product->productConfigurations->isNotEmpty())
+                        @foreach ($product->productConfigurations as $configuration)
+                        <div class="small">
+                            @if ($configuration->attributeValues->isNotEmpty())
+                            {{ $configuration->attributeValues->map(fn($attributeValue) => ($attributeValue->attribute?->name ?? 'خاصية') . ': ' . $attributeValue->value)->implode(' | ') }}
+                            @else
+                            {{ $configuration->name ?: 'تهيئة افتراضية' }}
+                            @endif
+                        </div>
+                        @endforeach
+                        @else
                         @forelse ($product->productVariants as $variant)
                         <div class="small">{{ $variant->variantValue?->type?->name ?? 'المواصفة' }}: {{ $variant->variantValue?->value ?? '-' }}</div>
                         @empty
                         <span class="text-muted">-</span>
                         @endforelse
+                        @endif
                     </td>
                     <td>{{ $product->status === 'active' ? 'مفعل' : 'معطل' }}</td>
                     <td>
