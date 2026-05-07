@@ -34,6 +34,7 @@ Artisan::command('ops:monitor-live', function (OperationalMonitoringService $mon
 })->purpose('Run unified operational monitoring snapshot and threshold alerts');
 
 Schedule::command('ops:monitor-live')->everyMinute();
+Schedule::command('archive:run')->dailyAt('03:15')->withoutOverlapping();
 
 Artisan::command('admin:dispatch-scheduled-notifications', function (AdminBroadcastService $service) {
     $result = $service->queueDueScheduled();
