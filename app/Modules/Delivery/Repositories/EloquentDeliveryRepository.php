@@ -21,6 +21,6 @@ class EloquentDeliveryRepository implements DeliveryRepositoryInterface
 
     public function locationLogsQuery(): Builder
     {
-        return DistributorLocationLog::query();
+        return DistributorLocationLog::query()->withCoordinates();
     }
 }

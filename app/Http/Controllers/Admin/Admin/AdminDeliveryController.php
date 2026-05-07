@@ -11,6 +11,7 @@ use App\Services\Orders\OrderService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AdminDeliveryController extends Controller
@@ -49,11 +50,20 @@ class AdminDeliveryController extends Controller
             ->withQueryString();
 
         $orderIds = $orders->getCollection()->pluck('id')->all();
-        $latestLocations = $this->deliveryDomainService->locationLogsQuery()
+        $latestLocationIds = DB::table('distributor_location_logs')
             ->whereIn('order_id', $orderIds)
-            ->orderByDesc('id')
+            ->selectRaw('MAX(id) as id')
+            ->groupBy('order_id')
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $latestLocations = $latestLocationIds === []
+            ? collect()
+            : $this->deliveryDomainService->locationLogsQuery()
+            ->whereIn('distributor_location_logs.id', $latestLocationIds)
             ->get()
-            ->unique('order_id')
             ->keyBy('order_id');
 
         $orderSupplierIds = $orders->getCollection()

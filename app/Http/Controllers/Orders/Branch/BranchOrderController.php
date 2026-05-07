@@ -14,6 +14,7 @@ use App\Services\Orders\OrderService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -124,9 +125,20 @@ class BranchOrderController extends Controller
         $branch = $this->currentBranch();
         abort_unless($order->branch_id === $branch->id, 404);
 
+        $destination = $this->parseCoordinates($order->customer_address);
+
         $distributor = $this->deliveryDomainService->distributorsQuery()
             ->where('branch_id', $branch->id)
             ->where('status', 'active')
+            ->leftJoinSub(
+                DB::table('distributor_location_logs as dll')
+                    ->selectRaw('dll.distributor_id, MAX(dll.id) as latest_log_id')
+                    ->groupBy('dll.distributor_id'),
+                'latest_logs',
+                fn($join) => $join->on('latest_logs.distributor_id', '=', 'distributors.id')
+            )
+            ->leftJoin('distributor_location_logs as dl', 'dl.id', '=', 'latest_logs.latest_log_id')
+            ->select('distributors.*')
             ->withCount([
                 'orders as active_orders_count' => function ($query) {
                     $query->whereIn('status', [
@@ -146,6 +158,15 @@ class BranchOrderController extends Controller
                         ->whereDate('updated_at', now()->toDateString());
                 },
             ])
+            ->when($destination !== null, function ($query) use ($destination) {
+                [$lat, $lng] = $destination;
+
+                $query->selectRaw(
+                    'ST_Distance_Sphere(dl.location, POINT(?, ?)) / 1000 as distance_km',
+                    [$lng, $lat]
+                );
+            })
+            ->when($destination !== null, fn($query) => $query->orderByRaw('COALESCE(distance_km, 999999)'))
             ->orderByRaw('((active_orders_count * 3) + (delayed_orders_count * 2) - (delivered_today_count * 0.2)) asc')
             ->orderBy('id')
             ->first();
@@ -157,6 +178,20 @@ class BranchOrderController extends Controller
         $this->orderService->assignDistributor($order, (int) $distributor->id);
 
         return back()->with('success', 'تم التوزيع الذكي للطلب على المندوب: ' . $distributor->name);
+    }
+
+    private function parseCoordinates(?string $value): ?array
+    {
+        if (! is_string($value) || ! str_contains($value, ',')) {
+            return null;
+        }
+
+        [$lat, $lng] = array_map('trim', explode(',', $value, 2));
+        if (! is_numeric($lat) || ! is_numeric($lng)) {
+            return null;
+        }
+
+        return [(float) $lat, (float) $lng];
     }
 
     public function generateDelayAlerts(): RedirectResponse

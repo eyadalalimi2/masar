@@ -14,8 +14,7 @@ class DistributorLocationLog extends Model
     protected $fillable = [
         'distributor_id',
         'order_id',
-        'latitude',
-        'longitude',
+        'location',
         'accuracy_meters',
         'note',
     ];
@@ -23,10 +22,16 @@ class DistributorLocationLog extends Model
     protected function casts(): array
     {
         return [
-            'latitude' => 'float',
-            'longitude' => 'float',
             'accuracy_meters' => 'float',
         ];
+    }
+
+    public function scopeWithCoordinates($query)
+    {
+        return $query
+            ->select('distributor_location_logs.*')
+            ->selectRaw('ST_Y(distributor_location_logs.location) as latitude')
+            ->selectRaw('ST_X(distributor_location_logs.location) as longitude');
     }
 
     public function distributor()

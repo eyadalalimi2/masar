@@ -96,14 +96,22 @@ class DistributorWorkflowService
         ?float $accuracyMeters = null,
         ?string $note = null,
     ): DistributorLocationLog {
-        $log = DistributorLocationLog::query()->create([
+        $latitude = max(-90, min(90, $latitude));
+        $longitude = max(-180, min(180, $longitude));
+
+        $locationExpression = DB::raw(sprintf('ST_GeomFromText("POINT(%F %F)")', $longitude, $latitude));
+
+        $logId = (int) DB::table('distributor_location_logs')->insertGetId([
             'distributor_id' => $distributor->id,
             'order_id' => $order?->id,
-            'latitude' => $latitude,
-            'longitude' => $longitude,
+            'location' => $locationExpression,
             'accuracy_meters' => $accuracyMeters,
             'note' => $note,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
+
+        $log = DistributorLocationLog::query()->withCoordinates()->findOrFail($logId);
 
         if ($order && $order->branch_id) {
             $branchAccountId = (int) ($order->branch?->account?->id ?? 0);

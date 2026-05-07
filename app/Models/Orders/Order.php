@@ -166,7 +166,7 @@ class Order extends Model
 
     public function locationLogs()
     {
-        return $this->hasMany(DistributorLocationLog::class);
+        return $this->hasMany(DistributorLocationLog::class)->withCoordinates();
     }
 
     public function statusHistories()

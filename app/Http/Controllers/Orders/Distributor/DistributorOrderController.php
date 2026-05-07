@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -357,7 +358,7 @@ class DistributorOrderController extends Controller
                 if ($origin !== null && is_string($order->customer_address) && str_contains($order->customer_address, ',')) {
                     [$lat, $lng] = array_map('trim', explode(',', $order->customer_address, 2));
                     if (is_numeric($lat) && is_numeric($lng)) {
-                        $distancePenalty = $this->haversineKm($origin, [(float) $lat, (float) $lng]);
+                        $distancePenalty = $this->distanceKmBySphere($origin, [(float) $lat, (float) $lng]);
                     }
                 }
 
@@ -374,18 +375,16 @@ class DistributorOrderController extends Controller
             ->values();
     }
 
-    private function haversineKm(array $origin, array $destination): float
+    private function distanceKmBySphere(array $origin, array $destination): float
     {
         [$lat1, $lon1] = $origin;
         [$lat2, $lon2] = $destination;
 
-        $earthRadius = 6371;
-        $latDelta = deg2rad($lat2 - $lat1);
-        $lonDelta = deg2rad($lon2 - $lon1);
+        $row = DB::selectOne(
+            'SELECT ST_Distance_Sphere(POINT(?, ?), POINT(?, ?)) / 1000 AS distance_km',
+            [$lon1, $lat1, $lon2, $lat2]
+        );
 
-        $a = sin($latDelta / 2) ** 2
-            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($lonDelta / 2) ** 2;
-
-        return $earthRadius * (2 * asin(min(1, sqrt($a))));
+        return isset($row->distance_km) ? (float) $row->distance_km : 0.0;
     }
 }
