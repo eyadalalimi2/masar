@@ -14,6 +14,7 @@ use App\Models\PosSale;
 use App\Services\Notifications\WebAlertService;
 use App\Services\Customer\CustomerService;
 use App\Services\Pos\PosContextService;
+use App\Support\Validation\UniqueUserContact;
 use App\Support\WorkingHoursCodec;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -109,13 +110,85 @@ class PosPortalAuthController extends Controller
         return view('pos.profile', compact('pos', 'customer'));
     }
 
+    public function verification(): View
+    {
+        $pos = $this->posContext->currentPos();
+        $customer = $this->posContext->resolveOrCreateCustomer($pos);
+
+        return view('pos.verification', compact('pos', 'customer'));
+    }
+
+    public function updateVerification(Request $request): RedirectResponse
+    {
+        $pos = $this->posContext->currentPos();
+        $customer = $this->posContext->resolveOrCreateCustomer($pos);
+
+        if ((bool) $customer->is_verified) {
+            return back()->withErrors(['verification' => 'تم توثيق الحساب ولا يمكن تعديل وثائق التوثيق بعد القبول.']);
+        }
+
+        $data = $request->validate([
+            'national_id_number' => ['required', 'string', 'max:255'],
+            'commercial_reg_number' => ['required', 'string', 'max:255'],
+            'license_number' => ['required', 'string', 'max:255'],
+            'national_id_image' => ['nullable', 'image', 'max:5120'],
+            'commercial_reg_image' => ['nullable', 'image', 'max:5120'],
+            'license_image' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        $this->customerService->update($customer, $data);
+
+        return back()->with('success', 'تم تحديث وثائق التوثيق بنجاح.');
+    }
+
+    public function requestVerification(): RedirectResponse
+    {
+        $pos = $this->posContext->currentPos();
+        $customer = $this->posContext->resolveOrCreateCustomer($pos);
+
+        if ((bool) $customer->is_verified) {
+            return back()->with('success', 'الحساب موثّق بالفعل.');
+        }
+
+        if ($customer->verification_requested_at !== null) {
+            return back()->with('success', 'تم إرسال طلب التوثيق مسبقًا وهو قيد المراجعة.');
+        }
+
+        $missing = [
+            'رقم البطاقة الشخصية' => $customer->national_id_number,
+            'صورة البطاقة الشخصية' => $customer->national_id_image,
+            'رقم السجل التجاري' => $customer->commercial_reg_number,
+            'صورة السجل التجاري' => $customer->commercial_reg_image,
+            'رقم الرخصة' => $customer->license_number,
+            'صورة الرخصة' => $customer->license_image,
+        ];
+
+        foreach ($missing as $label => $value) {
+            if (! is_string($value) || trim($value) === '') {
+                return back()->withErrors([
+                    'verification' => 'يرجى استكمال حقل ' . $label . ' قبل إرسال طلب التوثيق.',
+                ]);
+            }
+        }
+
+        $customer->update([
+            'verification_requested_at' => now(),
+            'verification_requested_by_user_id' => (int) ($pos->id ?? 0),
+        ]);
+
+        return back()->with('success', 'تم إرسال طلب التوثيق بنجاح.');
+    }
+
     public function updateProfile(Request $request): RedirectResponse
     {
         $pos = $this->posContext->currentPos();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30', Rule::unique('accounts', 'phone')->where(fn($q) => $q->where('account_type', 'pos'))->ignore($pos->id)],
+            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('accounts', $pos->id),
+                UniqueUserContact::ignore('customers', (int) ($pos->customer_id ?? 0) ?: null),
+            ])],
             'password' => ['nullable', 'string', 'min:6'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
@@ -125,12 +198,6 @@ class PosPortalAuthController extends Controller
             'logo' => ['nullable', 'image', 'max:5120'],
             'store_images' => ['nullable', 'array'],
             'store_images.*' => ['image', 'max:5120'],
-            'national_id_number' => ['nullable', 'string', 'max:255'],
-            'commercial_reg_number' => ['nullable', 'string', 'max:255'],
-            'license_number' => ['nullable', 'string', 'max:255'],
-            'national_id_image' => ['nullable', 'image', 'max:5120'],
-            'commercial_reg_image' => ['nullable', 'image', 'max:5120'],
-            'license_image' => ['nullable', 'image', 'max:5120'],
         ]);
 
         $customerMediaPayload = array_filter([
@@ -171,24 +238,11 @@ class PosPortalAuthController extends Controller
             'address' => $pos->address,
             'gps_location' => $pos->gps_location,
             'owner_name' => $pos->owner_name,
-            'national_id_number' => $pos->national_id_number,
-            'commercial_reg_number' => $pos->commercial_reg_number,
-            'license_number' => $pos->license_number,
             'status' => $pos->status,
         ];
 
         if (array_key_exists('password', $data)) {
             $customerPayload['password'] = $data['password'];
-        }
-
-        if (array_key_exists('national_id_image', $data)) {
-            $customerPayload['national_id_image'] = $data['national_id_image'];
-        }
-        if (array_key_exists('commercial_reg_image', $data)) {
-            $customerPayload['commercial_reg_image'] = $data['commercial_reg_image'];
-        }
-        if (array_key_exists('license_image', $data)) {
-            $customerPayload['license_image'] = $data['license_image'];
         }
 
         $customer = $this->customerService->update($customer, array_merge($customerPayload, $customerMediaPayload));

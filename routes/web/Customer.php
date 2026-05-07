@@ -41,6 +41,12 @@ Route::middleware(['auth:customer', 'ensure.customer'])->group(function () {
         ->name('customer.payment-methods.update');
     Route::get('/customer/profile', [CustomerPortalController::class, 'profile'])->name('customer.profile.index');
     Route::put('/customer/profile', [CustomerPortalController::class, 'updateProfile'])->name('customer.profile.update');
+    Route::get('/customer/profile/verification', [CustomerPortalController::class, 'verification'])
+        ->name('customer.profile.verification');
+    Route::put('/customer/profile/verification', [CustomerPortalController::class, 'updateVerification'])
+        ->name('customer.profile.verification.update');
+    Route::patch('/customer/profile/request-verification', [CustomerPortalController::class, 'requestVerification'])
+        ->name('customer.profile.request-verification');
     Route::delete('/customer/profile/store-images/{imageIndex}', [CustomerPortalController::class, 'destroyStoreImage'])
         ->name('customer.profile.store-images.destroy');
     Route::put('/customer/profile/working-hours', [CustomerPortalController::class, 'updateWorkingHours'])
@@ -116,6 +122,10 @@ Route::middleware(['auth:pos', 'ensure.pos'])->group(function () {
     Route::get('/pos/dashboard', [PosPortalAuthController::class, 'dashboard'])->name('pos.dashboard');
     Route::get('/pos/profile', [PosPortalAuthController::class, 'profile'])->name('pos.profile.index');
     Route::put('/pos/profile', [PosPortalAuthController::class, 'updateProfile'])->name('pos.profile.update');
+    Route::get('/pos/profile/verification', [PosPortalAuthController::class, 'verification'])->name('pos.profile.verification');
+    Route::put('/pos/profile/verification', [PosPortalAuthController::class, 'updateVerification'])->name('pos.profile.verification.update');
+    Route::patch('/pos/profile/request-verification', [PosPortalAuthController::class, 'requestVerification'])
+        ->name('pos.profile.request-verification');
     Route::put('/pos/profile/working-hours', [PosPortalAuthController::class, 'updateWorkingHours'])
         ->name('pos.profile.update-working-hours');
     Route::get('/pos/developer-profile', function () {
@@ -131,6 +141,10 @@ Route::middleware(['auth:workshop', 'ensure.workshop'])->group(function () {
     Route::get('/workshop/dashboard', [WorkshopPortalAuthController::class, 'dashboard'])->name('workshop.dashboard');
     Route::get('/workshop/profile', [WorkshopPortalAuthController::class, 'profile'])->name('workshop.profile.index');
     Route::put('/workshop/profile', [WorkshopPortalAuthController::class, 'updateProfile'])->name('workshop.profile.update');
+    Route::get('/workshop/profile/verification', [WorkshopPortalAuthController::class, 'verification'])->name('workshop.profile.verification');
+    Route::put('/workshop/profile/verification', [WorkshopPortalAuthController::class, 'updateVerification'])->name('workshop.profile.verification.update');
+    Route::patch('/workshop/profile/request-verification', [WorkshopPortalAuthController::class, 'requestVerification'])
+        ->name('workshop.profile.request-verification');
     Route::put('/workshop/profile/working-hours', [WorkshopPortalAuthController::class, 'updateWorkingHours'])
         ->name('workshop.profile.update-working-hours');
 

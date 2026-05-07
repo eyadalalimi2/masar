@@ -22,6 +22,8 @@ Route::middleware(['auth:agent', 'ensure.supplier'])->group(function () {
     })->name('agent.platform-release.index');
     Route::get('/profile', [AgentSupplierController::class, 'profile'])->name('agent.profile');
     Route::put('/profile', [AgentSupplierController::class, 'updateProfile'])->name('agent.profile.update');
+    Route::get('/profile/verification', [AgentSupplierController::class, 'verification'])->name('agent.profile.verification');
+    Route::put('/profile/verification', [AgentSupplierController::class, 'updateVerification'])->name('agent.profile.verification.update');
     Route::patch('/profile/security', [AgentSupplierController::class, 'updateSecurity'])
         ->name('agent.profile.update-security');
     Route::patch('/profile/working-hours', [AgentSupplierController::class, 'updateWorkingHours'])

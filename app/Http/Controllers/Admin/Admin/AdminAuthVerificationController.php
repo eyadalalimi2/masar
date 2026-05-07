@@ -12,9 +12,11 @@ use App\Models\Supplier\Supplier;
 use App\Services\Supplier\SupplierService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -241,6 +243,112 @@ class AdminAuthVerificationController extends Controller
         ]);
     }
 
+    public function updateDocuments(Request $request, string $type, int $id): RedirectResponse
+    {
+        $config = $this->accountTypes()[$type] ?? null;
+        if (! is_array($config)) {
+            abort(404);
+        }
+
+        $modelClass = $config['model'];
+        $account = $modelClass::query()->findOrFail($id);
+
+        $data = $request->validate([
+            'national_id_number' => ['required', 'string', 'max:255'],
+            'commercial_reg_number' => ['required', 'string', 'max:255'],
+            'license_number' => ['required', 'string', 'max:255'],
+            'national_id_image' => ['nullable', 'image', 'max:5120'],
+            'commercial_reg_image' => ['nullable', 'image', 'max:5120'],
+            'license_image' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        if ($type === 'agent') {
+            $supplier = Supplier::query()->find((int) ($account->supplier_id ?? 0));
+            if (! $supplier) {
+                return back()->with('error', 'تعذر الوصول إلى المورد المرتبط بهذا الوكيل.');
+            }
+
+            $updates = [
+                'national_id_number' => $data['national_id_number'],
+                'commercial_reg_number' => $data['commercial_reg_number'],
+                'license_number' => $data['license_number'],
+            ];
+
+            if ($request->hasFile('national_id_image')) {
+                $updates['national_id_image'] = $this->replaceDocumentImage(
+                    $request->file('national_id_image'),
+                    (string) ($supplier->national_id_image ?? ''),
+                    'suppliers/national-id'
+                );
+            }
+
+            if ($request->hasFile('commercial_reg_image')) {
+                $updates['commercial_reg_image'] = $this->replaceDocumentImage(
+                    $request->file('commercial_reg_image'),
+                    (string) ($supplier->commercial_reg_image ?? ''),
+                    'suppliers/commercial'
+                );
+            }
+
+            if ($request->hasFile('license_image')) {
+                $updates['license_image'] = $this->replaceDocumentImage(
+                    $request->file('license_image'),
+                    (string) ($supplier->license_image ?? ''),
+                    'suppliers/license'
+                );
+            }
+
+            $supplier->update($updates);
+
+            return back()->with('success', 'تم تحديث وثائق التوثيق للوكيل بنجاح.');
+        }
+
+        $customer = null;
+        if ($type === 'wholesale_trader' && $account instanceof Customer && $account->type === 'wholesale_trader') {
+            $customer = $account;
+        } elseif ((int) ($account->customer_id ?? 0) > 0) {
+            $customer = Customer::query()->whereKey((int) $account->customer_id)->first();
+        }
+
+        if (! $customer || ! in_array($customer->type, ['retail_store', 'workshop', 'wholesale_trader'], true)) {
+            return back()->with('error', 'تعذر الوصول إلى ملف العميل المرتبط بالحساب.');
+        }
+
+        $updates = [
+            'national_id_number' => $data['national_id_number'],
+            'commercial_reg_number' => $data['commercial_reg_number'],
+            'license_number' => $data['license_number'],
+        ];
+
+        if ($request->hasFile('national_id_image')) {
+            $updates['national_id_image'] = $this->replaceDocumentImage(
+                $request->file('national_id_image'),
+                (string) ($customer->national_id_image ?? ''),
+                'customers/national-id'
+            );
+        }
+
+        if ($request->hasFile('commercial_reg_image')) {
+            $updates['commercial_reg_image'] = $this->replaceDocumentImage(
+                $request->file('commercial_reg_image'),
+                (string) ($customer->commercial_reg_image ?? ''),
+                'customers/commercial'
+            );
+        }
+
+        if ($request->hasFile('license_image')) {
+            $updates['license_image'] = $this->replaceDocumentImage(
+                $request->file('license_image'),
+                (string) ($customer->license_image ?? ''),
+                'customers/license'
+            );
+        }
+
+        $customer->update($updates);
+
+        return back()->with('success', 'تم تحديث وثائق التوثيق للحساب بنجاح.');
+    }
+
     private function collectAccounts(string $search, string $type, string $status)
     {
         $allowedStatuses = [Account::STATUS_ACTIVE, Account::STATUS_INACTIVE];
@@ -414,12 +522,14 @@ class AdminAuthVerificationController extends Controller
                 'model' => Pos::class,
                 'name_column' => 'name',
                 'phone_column' => 'phone',
+                'customer_id_select' => 'owner_id',
             ],
             'workshop' => [
                 'label' => 'ورشة صيانة',
                 'model' => Workshop::class,
                 'name_column' => 'name',
                 'phone_column' => 'phone',
+                'customer_id_select' => 'owner_id',
             ],
             'wholesale_trader' => [
                 'label' => 'تاجر جملة',
@@ -457,5 +567,14 @@ class AdminAuthVerificationController extends Controller
         }
 
         return 'unverified';
+    }
+
+    private function replaceDocumentImage(UploadedFile $file, string $oldPath, string $folder): string
+    {
+        if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return (string) $file->store($folder, 'public');
     }
 }

@@ -12,6 +12,7 @@ use App\Models\Orders\Order;
 use App\Http\Requests\Supplier\SupplierRequest;
 use App\Http\Requests\Supplier\WorkingHoursRequest;
 use App\Services\Supplier\SupplierService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -155,7 +156,10 @@ class AgentSupplierController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('agents', 'phone')->ignore(Auth::guard('agent')->id()),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('agents', Auth::guard('agent')->id()),
+                    UniqueUserContact::ignore('suppliers', $supplier->id),
+                ]),
             ],
         ], [
             'phone.unique' => 'رقم الهاتف مستخدم مسبقًا.',

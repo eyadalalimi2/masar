@@ -45,21 +45,9 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">كلمة المرور الحالية</label>
-                    <input type="password" name="current_password" class="form-control"
-                        placeholder="مطلوبة فقط عند تغيير كلمة المرور">
-                </div>
-
-                <div class="col-md-6">
                     <label class="form-label">كلمة المرور الجديدة (اختياري)</label>
                     <input type="password" name="password" class="form-control"
                         placeholder="اتركها فارغة إذا لا تريد التغيير">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">تأكيد كلمة المرور الجديدة</label>
-                    <input type="password" name="password_confirmation" class="form-control"
-                        placeholder="أعد كتابة كلمة المرور الجديدة">
                 </div>
 
                 <div class="col-md-6">
@@ -77,7 +65,15 @@
 
                 <div class="col-md-6">
                     <label class="form-label">صورة المندوب</label>
-                    <input type="file" name="image" class="form-control" accept="image/*">
+                    <input type="file" id="distributorImageInput" name="image"
+                        class="form-control {{ $distributor->image ? 'd-none' : '' }}" accept="image/*">
+                    @if ($distributor->image)
+                    <label for="distributorImageInput" class="d-inline-block mt-1" style="cursor: pointer;">
+                        <img src="{{ asset('storage/' . $distributor->image) }}" alt="صورة المندوب"
+                            style="width: 90px; height: 90px; object-fit: cover; border-radius: 999px; border: 1px solid #e5e7eb;">
+                    </label>
+                    <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
+                    @endif
                 </div>
 
                 <div class="col-md-6">

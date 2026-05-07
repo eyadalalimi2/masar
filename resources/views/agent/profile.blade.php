@@ -109,8 +109,11 @@ $imageFieldKeys = [
             <label class="form-label">صورة الوكيل الحالية</label>
             <div>
                 @if ($supplier->agent_image)
-                <img src="{{ asset('storage/' . $supplier->agent_image) }}" alt="صورة الوكيل"
-                    style="width: 120px; height: 120px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 10px;">
+                <label for="securityAgentImageInput" class="d-inline-block" style="cursor: pointer;">
+                    <img src="{{ asset('storage/' . $supplier->agent_image) }}" alt="صورة الوكيل"
+                        style="width: 120px; height: 120px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 10px;">
+                </label>
+                <div class="text-muted small mt-1">اضغط على الصورة لاستبدالها.</div>
                 @else
                 <div class="text-muted small">لا توجد صورة</div>
                 @endif
@@ -120,12 +123,7 @@ $imageFieldKeys = [
         <div class="col-md-8 row g-3">
             <div class="col-12">
                 <label class="form-label">تغيير صورة الوكيل (اختياري)</label>
-                <input type="file" name="agent_image" class="form-control" accept="image/*">
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label">كلمة المرور الحالية</label>
-                <input type="password" name="current_password" class="form-control">
+                <input type="file" id="securityAgentImageInput" name="agent_image" class="form-control" accept="image/*">
             </div>
 
             <div class="col-md-4">
@@ -133,13 +131,8 @@ $imageFieldKeys = [
                 <input type="password" name="new_password" class="form-control">
             </div>
 
-            <div class="col-md-4">
-                <label class="form-label">تأكيد كلمة المرور الجديدة</label>
-                <input type="password" name="new_password_confirmation" class="form-control">
-            </div>
-
             <div class="col-12">
-                <small class="text-muted">يمكنك تغيير الصورة أو كلمة المرور أو كلاهما معًا.</small>
+                <small class="text-muted">يمكنك تغيير الصورة أو كلمة المرور الجديدة أو كلاهما معًا.</small>
             </div>
         </div>
     </div>
@@ -150,16 +143,10 @@ $imageFieldKeys = [
 
 @if (!$profileLocked)
 <div class="d-flex align-items-center gap-2 mb-3">
+    <a href="{{ route('agent.profile.verification') }}" class="btn btn-sm btn-outline-success">طلب التوثيق</a>
     @if ($supplier->has_verification_request)
     <span class="badge text-bg-warning">طلب التوثيق قيد المراجعة</span>
     <span class="small text-muted">{{ $supplier->verification_requested_at?->format('Y-m-d H:i') }}</span>
-    @else
-    <form action="{{ route('agent.profile.request-verification') }}" method="POST"
-        onsubmit="return confirm('إرسال طلب التوثيق للإدارة؟');">
-        @csrf
-        @method('PATCH')
-        <button type="submit" class="btn btn-sm btn-outline-success">إرسال طلب التوثيق</button>
-    </form>
     @endif
 </div>
 @endif
@@ -197,27 +184,23 @@ $imageFieldKeys = [
                         value="{{ old('whatsapp', $supplier->whatsapp) }}" required>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">رقم البطاقة الشخصية</label>
-                    <input type="text" name="national_id_number" class="form-control"
-                        value="{{ old('national_id_number', $supplier->national_id_number) }}" required>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">صورة البطاقة الشخصية</label>
-                    @if ($supplier->national_id_image)
-                    <div class="text-muted small">تم رفع الصورة مسبقا.</div>
-                    @else
-                    <input type="file" name="national_id_image" class="form-control" accept="image/*">
-                    @endif
-                </div>
+                <input type="hidden" name="national_id_number"
+                    value="{{ old('national_id_number', $supplier->national_id_number) }}">
+                <input type="hidden" name="commercial_reg_number"
+                    value="{{ old('commercial_reg_number', $supplier->commercial_reg_number) }}">
+                <input type="hidden" name="license_number"
+                    value="{{ old('license_number', $supplier->license_number) }}">
 
                 <div class="col-md-4">
                     <label class="form-label">صورة الوكيل</label>
+                    <input type="file" id="agentImageInput" name="agent_image"
+                        class="form-control {{ $supplier->agent_image ? 'd-none' : '' }}" accept="image/*">
                     @if ($supplier->agent_image)
-                    <div class="text-muted small">تم رفع الصورة مسبقا.</div>
-                    @else
-                    <input type="file" name="agent_image" class="form-control" accept="image/*">
+                    <label for="agentImageInput" class="d-inline-block mt-1" style="cursor: pointer;">
+                        <img src="{{ asset('storage/' . $supplier->agent_image) }}" alt="صورة الوكيل"
+                            style="width: 120px; height: 120px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 10px;">
+                    </label>
+                    <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
                     @endif
                 </div>
 
@@ -229,10 +212,14 @@ $imageFieldKeys = [
 
                 <div class="col-md-4">
                     <label class="form-label">صورة مدير الفرع</label>
+                    <input type="file" id="branchManagerImageInput" name="branch_manager_image"
+                        class="form-control {{ $supplier->branch_manager_image ? 'd-none' : '' }}" accept="image/*">
                     @if ($supplier->branch_manager_image)
-                    <div class="text-muted small">تم رفع الصورة مسبقا.</div>
-                    @else
-                    <input type="file" name="branch_manager_image" class="form-control" accept="image/*">
+                    <label for="branchManagerImageInput" class="d-inline-block mt-1" style="cursor: pointer;">
+                        <img src="{{ asset('storage/' . $supplier->branch_manager_image) }}" alt="صورة مدير الفرع"
+                            style="width: 120px; height: 120px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 10px;">
+                    </label>
+                    <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
                     @endif
                 </div>
 
@@ -277,10 +264,14 @@ $imageFieldKeys = [
 
                 <div class="col-md-6">
                     <label class="form-label">الشعار</label>
+                    <input type="file" id="supplierLogoInput" name="logo"
+                        class="form-control {{ $supplier->logo ? 'd-none' : '' }}" accept="image/*">
                     @if ($supplier->logo)
-                    <div class="text-muted small">تم رفع الصورة مسبقا.</div>
-                    @else
-                    <input type="file" name="logo" class="form-control" accept="image/*">
+                    <label for="supplierLogoInput" class="d-inline-block mt-1" style="cursor: pointer;">
+                        <img src="{{ asset('storage/' . $supplier->logo) }}" alt="شعار الوكيل"
+                            style="width: 140px; height: 90px; object-fit: cover; border: 1px solid #e5e7eb; border-radius: 10px;">
+                    </label>
+                    <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
                     @endif
                 </div>
 
@@ -320,43 +311,6 @@ $imageFieldKeys = [
         </div>
     </div>
 
-    <div class="col-12">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white fw-bold">بيانات السجل والتراخيص</div>
-            <div class="card-body row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">رقم السجل التجاري</label>
-                    <input type="text" name="commercial_reg_number" class="form-control"
-                        value="{{ old('commercial_reg_number', $supplier->commercial_reg_number) }}" required>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">صورة السجل التجاري</label>
-                    @if ($supplier->commercial_reg_image)
-                    <div class="text-muted small">تم رفع الصورة مسبقا.</div>
-                    @else
-                    <input type="file" name="commercial_reg_image" class="form-control" accept="image/*">
-                    @endif
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">رقم الرخصة</label>
-                    <input type="text" name="license_number" class="form-control"
-                        value="{{ old('license_number', $supplier->license_number) }}" required>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label">صورة الرخصة</label>
-                    @if ($supplier->license_image)
-                    <div class="text-muted small">تم رفع الصورة مسبقا.</div>
-                    @else
-                    <input type="file" name="license_image" class="form-control" accept="image/*">
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="col-12 d-flex justify-content-end">
         <button type="submit" class="btn btn-dark px-4">حفظ تحديثات الملف</button>
     </div>
@@ -378,6 +332,24 @@ $imageFieldKeys = [
                     <dt class="col-sm-4 text-muted">البريد الإلكتروني</dt>
                     <dd class="col-sm-8">{{ $supplier->email ?: 'غير محدد' }}</dd>
 
+
+                    <div class="col-md-6">
+                        <label class="form-label">صورة السجل التجاري</label>
+                        @if ($supplier->commercial_reg_image)
+                        <div class="text-muted small">تم رفع الصورة مسبقا.</div>
+                        @else
+                        <input type="file" name="commercial_reg_image" class="form-control" accept="image/*">
+                        @endif
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">صورة الرخصة</label>
+                        @if ($supplier->license_image)
+                        <div class="text-muted small">تم رفع الصورة مسبقا.</div>
+                        @else
+                        <input type="file" name="license_image" class="form-control" accept="image/*">
+                        @endif
+                    </div>
                     <dt class="col-sm-4 text-muted">رقم الهاتف</dt>
                     <dd class="col-sm-8">{{ $supplier->phone }}</dd>
 

@@ -21,17 +21,25 @@ trait HasPublicUuid
 
     public function getRouteKeyName(): string
     {
-        return 'uuid';
+        return $this->getKeyName();
     }
 
     public function resolveRouteBinding($value, $field = null)
     {
         $field = $field ?? $this->getRouteKeyName();
+        $primaryKey = $this->getKeyName();
 
-        return $this->newQuery()
-            ->where($field, $value)
-            ->orWhere($this->getKeyName(), $value)
-            ->firstOrFail();
+        $query = $this->newQuery()->where($field, $value);
+
+        if ($field !== $primaryKey) {
+            $query->orWhere($primaryKey, $value);
+        }
+
+        if ($field !== 'uuid') {
+            $query->orWhere('uuid', $value);
+        }
+
+        return $query->firstOrFail();
     }
 
     public function scopeSearchByUuid(Builder $query, ?string $uuid): Builder

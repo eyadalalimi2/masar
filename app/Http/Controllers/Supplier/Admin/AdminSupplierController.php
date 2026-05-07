@@ -8,6 +8,7 @@ use App\Models\Supplier\Supplier;
 use App\Models\Supplier\SupplierFieldChangeRequest;
 use App\Http\Requests\Supplier\SupplierRequest;
 use App\Services\Supplier\SupplierService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -75,7 +76,7 @@ class AdminSupplierController extends Controller
         $request->validate([
             'password' => ['required', 'string', 'min:6'],
             'branch_manager_password' => ['nullable', 'string', 'min:6'],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('agents', 'phone')],
+            'phone' => ['required', 'string', 'max:20', new UniqueUserContact('phone')],
         ], [
             'password.required' => 'كلمة المرور مطلوبة.',
             'password.min' => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
@@ -120,14 +121,7 @@ class AdminSupplierController extends Controller
         $request->validate([
             'password' => ['nullable', 'string', 'min:6'],
             'branch_manager_password' => ['nullable', 'string', 'min:6'],
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('agents', 'phone')->ignore($supplier->id, 'supplier_id'),
-            ],
         ], [
-            'phone.unique' => 'رقم الهاتف مستخدم مسبقًا.',
             'password.min' => 'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
             'branch_manager_password.min' => 'كلمة مرور مدير الفرع يجب أن تكون 6 أحرف على الأقل.',
         ]);

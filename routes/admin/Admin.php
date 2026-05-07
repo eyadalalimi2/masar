@@ -87,6 +87,10 @@ Route::middleware(['auth:admin', 'ensure.admin', 'ensure.admin.session', 'ensure
         ->whereNumber('id')
         ->name('admin.auth-verification.documents.show');
 
+    Route::patch('/auth-verification/documents/{type}/{id}', [AdminAuthVerificationController::class, 'updateDocuments'])
+        ->whereNumber('id')
+        ->name('admin.auth-verification.documents.update');
+
     Route::patch('/auth-verification/accounts/{type}/{id}/toggle', [AdminAuthVerificationController::class, 'toggleAccountStatus'])
         ->whereNumber('id')
         ->name('admin.auth-verification.accounts.toggle');

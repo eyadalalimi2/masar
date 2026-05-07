@@ -18,6 +18,7 @@ use App\Models\Orders\Order;
 use App\Models\Orders\Order as CustomerOrder;
 use App\Models\Orders\OrderStatusHistory;
 use App\Services\Customer\CustomerService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -111,13 +112,82 @@ class CustomerPortalController extends Controller
         return view('customer.profile.index', compact('customer', 'account', 'transactions'));
     }
 
+    public function verification(): View
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        return view('customer.profile.verification', compact('customer'));
+    }
+
+    public function updateVerification(Request $request): RedirectResponse
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        if ((bool) $customer->is_verified) {
+            return back()->withErrors(['verification' => 'تم توثيق الحساب ولا يمكن تعديل وثائق التوثيق بعد القبول.']);
+        }
+
+        $data = $request->validate([
+            'national_id_number' => ['required', 'string', 'max:255'],
+            'commercial_reg_number' => ['required', 'string', 'max:255'],
+            'license_number' => ['required', 'string', 'max:255'],
+            'national_id_image' => ['nullable', 'image', 'max:5120'],
+            'commercial_reg_image' => ['nullable', 'image', 'max:5120'],
+            'license_image' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        $this->customerService->update($customer, $data);
+
+        return back()->with('status', 'تم تحديث وثائق التوثيق بنجاح.');
+    }
+
+    public function requestVerification(): RedirectResponse
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        if ((bool) $customer->is_verified) {
+            return back()->with('status', 'الحساب موثّق بالفعل.');
+        }
+
+        if ($customer->verification_requested_at !== null) {
+            return back()->with('status', 'تم إرسال طلب التوثيق مسبقًا وهو قيد المراجعة.');
+        }
+
+        $missing = [
+            'رقم البطاقة الشخصية' => $customer->national_id_number,
+            'صورة البطاقة الشخصية' => $customer->national_id_image,
+            'رقم السجل التجاري' => $customer->commercial_reg_number,
+            'صورة السجل التجاري' => $customer->commercial_reg_image,
+            'رقم الرخصة' => $customer->license_number,
+            'صورة الرخصة' => $customer->license_image,
+        ];
+
+        foreach ($missing as $label => $value) {
+            if (! is_string($value) || trim($value) === '') {
+                return back()->withErrors([
+                    'verification' => 'يرجى استكمال حقل ' . $label . ' قبل إرسال طلب التوثيق.',
+                ]);
+            }
+        }
+
+        $customer->update([
+            'verification_requested_at' => now(),
+            'verification_requested_by_user_id' => (int) (Auth::guard('customer')->id() ?? 0),
+        ]);
+
+        return back()->with('status', 'تم إرسال طلب التوثيق بنجاح.');
+    }
+
     public function updateProfile(Request $request): RedirectResponse
     {
         $customer = Auth::guard('customer')->user();
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30', 'unique:customers,phone,' . $customer->id],
+            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('customers', $customer->id),
+                UniqueUserContact::ignore('accounts', optional(CustomerAccount::query()->where('owner_id', $customer->id)->first())->id),
+            ])],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
             'gps_location' => ['nullable', 'string', 'max:120'],

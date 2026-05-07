@@ -22,6 +22,7 @@ use App\Models\Workshop\WorkshopServiceOrder;
 use App\Services\Notifications\WebAlertService;
 use App\Services\Orders\OrderService;
 use App\Services\Pricing\CommissionEngineService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -1093,7 +1094,7 @@ class ConsumerAppController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30', 'unique:consumers,phone,' . $consumer->id],
+            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [UniqueUserContact::ignore('consumers', $consumer->id)])],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:500'],
             'gps_location' => ['nullable', 'string', 'max:120'],

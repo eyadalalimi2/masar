@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Distribution;
 
+use App\Models\Distribution\BranchAccount;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +17,7 @@ class BranchRequest extends FormRequest
     public function rules(): array
     {
         $branchId = $this->route('branch')?->id ?? $this->route('branch');
+        $branchAccountId = $branchId ? BranchAccount::query()->where('owner_id', (int) $branchId)->value('id') : null;
         $lookupService = app('App\\Services\\Lookup\\LookupService');
 
         return [
@@ -24,7 +27,10 @@ class BranchRequest extends FormRequest
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('branches', 'phone')->ignore($branchId),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('branches', $branchId),
+                    UniqueUserContact::ignore('accounts', $branchAccountId),
+                ]),
             ],
             'branch_manager_name' => ['nullable', 'string', 'max:255'],
             'branch_manager_image' => ['nullable', 'image', 'max:4096'],

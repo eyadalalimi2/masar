@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Supplier;
 
+use App\Models\Supplier\Agent;
+use App\Models\Supplier\Supplier as SupplierModel;
+use App\Support\Validation\UniqueUserContact;
 use App\Support\WorkingHoursCodec;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class SupplierRequest extends FormRequest
 {
@@ -28,13 +30,41 @@ class SupplierRequest extends FormRequest
     {
         $routeSupplier = $this->route('supplier');
         $supplierId = is_object($routeSupplier) && isset($routeSupplier->id) ? (int) $routeSupplier->id : null;
+        $linkedAgentId = $supplierId ? Agent::withTrashed()->where('supplier_id', $supplierId)->value('id') : null;
+        $currentAgentId = (int) (Auth::guard('agent')->id() ?? 0);
+        if ($currentAgentId > 0) {
+            $linkedAgentId = $currentAgentId;
+        }
 
-        $emailUniqueRule = Rule::unique('agents', 'email');
-        $supplierEmailUniqueRule = Rule::unique('suppliers', 'email')->ignore($supplierId);
-        $supplierPhoneUniqueRule = Rule::unique('suppliers', 'phone')->ignore($supplierId);
+        $currentSupplier = $supplierId ? SupplierModel::query()->find($supplierId) : null;
+        $currentAgent = $linkedAgentId ? Agent::withTrashed()->find($linkedAgentId) : null;
 
-        if (Auth::guard('agent')->check()) {
-            $emailUniqueRule = $emailUniqueRule->ignore((int) Auth::guard('agent')->id());
+        $submittedEmail = strtolower(trim((string) $this->input('email', '')));
+        $submittedPhone = trim((string) $this->input('phone', ''));
+        $supplierEmail = strtolower(trim((string) ($currentSupplier?->email ?? '')));
+        $agentEmail = strtolower(trim((string) ($currentAgent?->email ?? '')));
+        $supplierPhone = trim((string) ($currentSupplier?->phone ?? ''));
+        $agentPhone = trim((string) ($currentAgent?->phone ?? ''));
+
+        $isSameExistingEmail = $submittedEmail !== ''
+            && in_array($submittedEmail, [$supplierEmail, $agentEmail], true);
+        $isSameExistingPhone = $submittedPhone !== ''
+            && in_array($submittedPhone, [$supplierPhone, $agentPhone], true);
+
+        $phoneRules = ['required', 'string', 'max:20'];
+        if (! $isSameExistingPhone) {
+            $phoneRules[] = new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('suppliers', $supplierId),
+                UniqueUserContact::ignore('agents', $linkedAgentId),
+            ]);
+        }
+
+        $emailRules = ['nullable', 'email', 'max:255'];
+        if (! $isSameExistingEmail) {
+            $emailRules[] = new UniqueUserContact('email', [
+                UniqueUserContact::ignore('suppliers', $supplierId),
+                UniqueUserContact::ignore('agents', $linkedAgentId),
+            ]);
         }
 
         return [
@@ -51,11 +81,11 @@ class SupplierRequest extends FormRequest
             'license_image' => ['nullable', 'image', 'max:4096'],
             'national_id_number' => ['required', 'string', 'max:255'],
             'national_id_image' => ['nullable', 'image', 'max:4096'],
-            'phone' => ['required', 'string', 'max:20', $supplierPhoneUniqueRule],
+            'phone' => $phoneRules,
             'whatsapp' => ['required', 'string', 'max:20'],
             'address' => ['required', 'string', 'max:500'],
             'gps_location' => ['required', 'string', 'max:255', 'regex:/^\s*-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$/'],
-            'email' => ['nullable', 'email', 'max:255', $emailUniqueRule, $supplierEmailUniqueRule],
+            'email' => $emailRules,
             'working_hours' => ['required', 'array'],
             'working_hours.saturday.enabled' => ['required', 'boolean'],
             'working_hours.saturday.start' => ['nullable', 'date_format:H:i', 'required_if:working_hours.saturday.enabled,1'],

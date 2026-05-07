@@ -52,11 +52,15 @@
 
                 <div class="col-md-4">
                     <label class="form-label">صورة مدير الفرع</label>
-                    <input type="file" name="branch_manager_image" class="form-control" accept="image/*">
+                    <input type="file" id="branchManagerProfileImageInput" name="branch_manager_image"
+                        class="form-control {{ $branch->branch_manager_image ? 'd-none' : '' }}" accept="image/*">
                     @if ($branch->branch_manager_image)
-                    <img src="{{ asset('storage/' . $branch->branch_manager_image) }}" alt="صورة مدير الفرع"
-                        class="mt-2 rounded border"
-                        style="width: 90px; height: 90px; object-fit: cover; border-radius: 999px !important;">
+                    <label for="branchManagerProfileImageInput" class="d-inline-block mt-1" style="cursor: pointer;">
+                        <img src="{{ asset('storage/' . $branch->branch_manager_image) }}" alt="صورة مدير الفرع"
+                            class="rounded border"
+                            style="width: 90px; height: 90px; object-fit: cover; border-radius: 999px !important;">
+                    </label>
+                    <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
                     @endif
                 </div>
 

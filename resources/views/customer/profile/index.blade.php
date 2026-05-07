@@ -17,6 +17,10 @@
     <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
+    <div class="mb-2 text-end">
+        <a href="{{ route('customer.profile.verification') }}" class="btn btn-outline-success btn-sm">طلب التوثيق</a>
+    </div>
+
     <form method="POST" action="{{ route('customer.profile.update') }}" enctype="multipart/form-data"
         class="card border-0 shadow-sm mb-3">
         @csrf
@@ -55,19 +59,27 @@
 
             <div class="col-md-4">
                 <label class="form-label">صورة المالك</label>
-                <input type="file" name="owner_image" class="form-control" accept="image/*">
+                <input type="file" id="customerOwnerImageInput" name="owner_image"
+                    class="form-control {{ $customer->owner_image_url ? 'd-none' : '' }}" accept="image/*">
                 @if ($customer->owner_image_url)
-                <img src="{{ $customer->owner_image_url }}" alt="صورة المالك" class="rounded border mt-2"
-                    style="width:78px;height:78px;object-fit:cover;">
+                <label for="customerOwnerImageInput" class="d-inline-block mt-2" style="cursor: pointer;">
+                    <img src="{{ $customer->owner_image_url }}" alt="صورة المالك" class="rounded border"
+                        style="width:78px;height:78px;object-fit:cover;">
+                </label>
+                <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
                 @endif
             </div>
 
             <div class="col-md-4">
                 <label class="form-label">لوجو {{ $typeLabel }}</label>
-                <input type="file" name="logo" class="form-control" accept="image/*">
+                <input type="file" id="customerLogoImageInput" name="logo"
+                    class="form-control {{ $customer->logo_url ? 'd-none' : '' }}" accept="image/*">
                 @if ($customer->logo_url)
-                <img src="{{ $customer->logo_url }}" alt="لوجو {{ $typeLabel }}" class="rounded border mt-2"
-                    style="width:78px;height:78px;object-fit:cover;">
+                <label for="customerLogoImageInput" class="d-inline-block mt-2" style="cursor: pointer;">
+                    <img src="{{ $customer->logo_url }}" alt="لوجو {{ $typeLabel }}" class="rounded border"
+                        style="width:78px;height:78px;object-fit:cover;">
+                </label>
+                <div class="text-muted small">اضغط على الصورة لاستبدالها.</div>
                 @endif
             </div>
 

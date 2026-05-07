@@ -7,6 +7,7 @@ use App\Models\Finance\Account;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\BranchAccount;
 use App\Services\Lookup\LookupService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,7 +35,7 @@ class BranchUserController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('accounts', 'phone')->where(fn($q) => $q->where('account_type', 'branch'))],
+            'phone' => ['required', 'string', 'max:20', new UniqueUserContact('phone')],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'status' => ['required', Rule::in($lookupService->accountStatuses())],
         ]);
@@ -62,7 +63,10 @@ class BranchUserController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('accounts', 'phone')->where(fn($q) => $q->where('account_type', 'branch'))->ignore($user->id),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('accounts', $user->id),
+                    UniqueUserContact::ignore('branches', $branch->id),
+                ]),
             ],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
             'status' => ['required', Rule::in($lookupService->accountStatuses())],

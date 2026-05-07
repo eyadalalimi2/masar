@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Finance\Account;
 use App\Models\Supplier\Agent;
 use App\Services\Lookup\LookupService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -33,8 +34,8 @@ class AgentUserController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255', 'unique:agents,email'],
-            'phone' => ['required', 'string', 'max:20', 'unique:agents,phone'],
+            'email' => ['nullable', 'email', 'max:255', new UniqueUserContact('email')],
+            'phone' => ['required', 'string', 'max:20', new UniqueUserContact('phone')],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'status' => ['required', Rule::in($lookupService->accountStatuses())],
         ]);
@@ -63,13 +64,19 @@ class AgentUserController extends Controller
                 'nullable',
                 'email',
                 'max:255',
-                Rule::unique('agents', 'email')->ignore($user->id),
+                new UniqueUserContact('email', [
+                    UniqueUserContact::ignore('agents', $user->id),
+                    UniqueUserContact::ignore('suppliers', $supplierId),
+                ]),
             ],
             'phone' => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('agents', 'phone')->ignore($user->id),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('agents', $user->id),
+                    UniqueUserContact::ignore('suppliers', $supplierId),
+                ]),
             ],
             'password' => ['nullable', 'string', 'min:6', 'confirmed'],
             'status' => ['required', Rule::in($lookupService->accountStatuses())],

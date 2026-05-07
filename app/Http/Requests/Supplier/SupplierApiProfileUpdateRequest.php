@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Supplier;
 
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class SupplierApiProfileUpdateRequest extends FormRequest
 {
@@ -14,7 +15,8 @@ class SupplierApiProfileUpdateRequest extends FormRequest
 
     public function rules(): array
     {
-        $userId = (int) ($this->user()?->id ?? 0);
+        $agentId = (int) (Auth::guard('agent')->id() ?? 0);
+        $supplierId = (int) (Auth::guard('agent')->user()?->supplier_id ?? 0);
 
         return [
             'logo' => ['nullable', 'image', 'max:4096'],
@@ -31,11 +33,17 @@ class SupplierApiProfileUpdateRequest extends FormRequest
             'commercial_reg_number' => ['nullable', 'string', 'max:255'],
             'license_number' => ['nullable', 'string', 'max:255'],
             'national_id_number' => ['nullable', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->ignore($userId)],
+            'phone' => ['required', 'string', 'max:20', new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('agents', $agentId > 0 ? $agentId : null),
+                UniqueUserContact::ignore('suppliers', $supplierId > 0 ? $supplierId : null),
+            ])],
             'whatsapp' => ['required', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:500'],
             'gps_location' => ['required', 'string', 'max:255', 'regex:/^\s*-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?\s*$/'],
-            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
+            'email' => ['nullable', 'email', 'max:255', new UniqueUserContact('email', [
+                UniqueUserContact::ignore('agents', $agentId > 0 ? $agentId : null),
+                UniqueUserContact::ignore('suppliers', $supplierId > 0 ? $supplierId : null),
+            ])],
         ];
     }
 
@@ -70,9 +78,3 @@ class SupplierApiProfileUpdateRequest extends FormRequest
         return number_format((float) $lat, 6, '.', '') . ',' . number_format((float) $lng, 6, '.', '');
     }
 }
-
-
-
-
-
-

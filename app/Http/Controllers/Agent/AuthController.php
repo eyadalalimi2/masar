@@ -15,10 +15,13 @@ use App\Http\Requests\Supplier\WorkingHoursRequest;
 use App\Models\Notifications\WebAlert;
 use App\Services\Notifications\WebAlertService;
 use App\Services\Supplier\SupplierService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -252,6 +255,67 @@ class AuthController extends Controller
         return view('agent.profile', compact('supplier'));
     }
 
+    public function verification(): View
+    {
+        $supplier = Auth::guard('agent')->user()->supplier;
+
+        return view('agent.verification', compact('supplier'));
+    }
+
+    public function updateVerification(Request $request): RedirectResponse
+    {
+        $supplier = Auth::guard('agent')->user()->supplier;
+
+        if ($supplier->is_verified) {
+            return redirect()->route('agent.profile.verification')->withErrors([
+                'verification' => 'تم توثيق الحساب ولا يمكن تعديل وثائق التوثيق بعد القبول.',
+            ]);
+        }
+
+        $data = $request->validate([
+            'national_id_number' => ['required', 'string', 'max:255'],
+            'commercial_reg_number' => ['required', 'string', 'max:255'],
+            'license_number' => ['required', 'string', 'max:255'],
+            'national_id_image' => ['nullable', 'image', 'max:4096'],
+            'commercial_reg_image' => ['nullable', 'image', 'max:4096'],
+            'license_image' => ['nullable', 'image', 'max:4096'],
+        ]);
+
+        $updates = [
+            'national_id_number' => $data['national_id_number'],
+            'commercial_reg_number' => $data['commercial_reg_number'],
+            'license_number' => $data['license_number'],
+        ];
+
+        if ($request->hasFile('national_id_image')) {
+            $updates['national_id_image'] = $this->replaceSupplierDocument(
+                $request->file('national_id_image'),
+                (string) ($supplier->national_id_image ?? ''),
+                'suppliers/national-id'
+            );
+        }
+
+        if ($request->hasFile('commercial_reg_image')) {
+            $updates['commercial_reg_image'] = $this->replaceSupplierDocument(
+                $request->file('commercial_reg_image'),
+                (string) ($supplier->commercial_reg_image ?? ''),
+                'suppliers/commercial'
+            );
+        }
+
+        if ($request->hasFile('license_image')) {
+            $updates['license_image'] = $this->replaceSupplierDocument(
+                $request->file('license_image'),
+                (string) ($supplier->license_image ?? ''),
+                'suppliers/license'
+            );
+        }
+
+        $supplier->update($updates);
+
+        return redirect()->route('agent.profile.verification')->with('success', 'تم تحديث بيانات التوثيق بنجاح.');
+    }
+
     public function updateProfile(SupplierRequest $request): RedirectResponse
     {
         $supplier = Auth::guard('agent')->user()->supplier;
@@ -267,7 +331,10 @@ class AuthController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('agents', 'phone')->ignore(Auth::guard('agent')->id()),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('agents', Auth::guard('agent')->id()),
+                    UniqueUserContact::ignore('suppliers', $supplier->id),
+                ]),
             ],
         ], [
             'phone.unique' => 'رقم الهاتف مستخدم مسبقًا.',
@@ -297,15 +364,11 @@ class AuthController extends Controller
 
         $data = $request->validate([
             'agent_image' => ['nullable', 'image', 'max:4096'],
-            'current_password' => ['nullable', 'required_with:new_password', 'current_password:agent'],
-            'new_password' => ['nullable', 'string', 'min:6', 'confirmed'],
+            'new_password' => ['nullable', 'string', 'min:6'],
         ], [
             'agent_image.image' => 'صورة الوكيل يجب أن تكون صورة صحيحة.',
             'agent_image.max' => 'صورة الوكيل يجب ألا تتجاوز 4MB.',
-            'current_password.required_with' => 'كلمة المرور الحالية مطلوبة لتغيير كلمة المرور.',
-            'current_password.current_password' => 'كلمة المرور الحالية غير صحيحة.',
             'new_password.min' => 'كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف.',
-            'new_password.confirmed' => 'تأكيد كلمة المرور الجديدة غير متطابق.',
         ]);
 
         if (! $request->hasFile('agent_image') && empty($data['new_password'])) {
@@ -385,8 +448,34 @@ class AuthController extends Controller
             return redirect()->route('agent.profile')->with('success', 'تم إرسال طلب التوثيق مسبقًا وهو قيد المراجعة.');
         }
 
+        $missing = [
+            'رقم البطاقة الشخصية' => $supplier->national_id_number,
+            'صورة البطاقة الشخصية' => $supplier->national_id_image,
+            'رقم السجل التجاري' => $supplier->commercial_reg_number,
+            'صورة السجل التجاري' => $supplier->commercial_reg_image,
+            'رقم الرخصة' => $supplier->license_number,
+            'صورة الرخصة' => $supplier->license_image,
+        ];
+
+        foreach ($missing as $label => $value) {
+            if (! is_string($value) || trim($value) === '') {
+                return redirect()->route('agent.profile.verification')->withErrors([
+                    'verification' => 'يرجى استكمال حقل ' . $label . ' قبل إرسال طلب التوثيق.',
+                ]);
+            }
+        }
+
         $this->supplierService->requestVerification($supplier->id, (int) Auth::guard('agent')->id());
 
         return redirect()->route('agent.profile')->with('success', 'تم إرسال طلب التوثيق بنجاح.');
+    }
+
+    private function replaceSupplierDocument(UploadedFile $file, string $oldPath, string $folder): string
+    {
+        if ($oldPath !== '' && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return (string) $file->store($folder, 'public');
     }
 }

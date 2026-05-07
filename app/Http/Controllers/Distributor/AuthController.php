@@ -14,6 +14,7 @@ use App\Models\Notifications\WebAlert;
 use App\Models\Orders\Order;
 use App\Services\Distribution\DistributorService;
 use App\Services\Notifications\WebAlertService;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -240,19 +241,18 @@ class AuthController extends Controller
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('accounts', 'phone')->where(fn($q) => $q->where('account_type', 'distributor'))->ignore($account->id),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('accounts', $account->id),
+                    UniqueUserContact::ignore('distributors', $distributor->id),
+                ]),
             ],
-            'current_password' => ['nullable', 'required_with:password', 'current_password:distributor'],
-            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+            'password' => ['nullable', 'string', 'min:6'],
             'image' => ['nullable', 'image', 'max:4096'],
             'vehicle_type' => ['nullable', 'string', 'max:255'],
             'distribution_points' => ['nullable', 'string', 'max:2000'],
         ], [
             'phone.unique' => 'رقم الهاتف مستخدم مسبقًا.',
-            'current_password.required_with' => 'أدخل كلمة المرور الحالية لتغيير كلمة المرور.',
-            'current_password.current_password' => 'كلمة المرور الحالية غير صحيحة.',
             'password.min' => 'كلمة المرور يجب ألا تقل عن 6 أحرف.',
-            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق.',
             'image.image' => 'الصورة يجب أن تكون صورة صحيحة.',
             'image.max' => 'الصورة يجب ألا تتجاوز 4MB.',
         ]);

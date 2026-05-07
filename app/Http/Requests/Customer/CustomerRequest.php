@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\Customer;
 
+use App\Models\Customer\Pos;
+use App\Models\Customer\Workshop;
 use App\Support\OptionLists;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,12 +19,18 @@ class CustomerRequest extends FormRequest
     public function rules(): array
     {
         $customerId = $this->route('customer')?->id;
+        $posAccountId = $customerId ? Pos::query()->where('owner_id', (int) $customerId)->value('id') : null;
+        $workshopAccountId = $customerId ? Workshop::query()->where('owner_id', (int) $customerId)->value('id') : null;
         $lookupService = app('App\\Services\\Lookup\\LookupService');
 
         return [
             'type' => ['required', Rule::in(OptionLists::CUSTOMER_TYPES)],
             'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:30', Rule::unique('customers', 'phone')->ignore($customerId)],
+            'phone' => ['required', 'string', 'max:30', new UniqueUserContact('phone', [
+                UniqueUserContact::ignore('customers', $customerId),
+                UniqueUserContact::ignore('accounts', $posAccountId),
+                UniqueUserContact::ignore('accounts', $workshopAccountId),
+            ])],
             'password' => [$customerId ? 'nullable' : 'required', 'string', 'min:6', 'confirmed'],
             'whatsapp' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:1500'],

@@ -92,6 +92,11 @@ class Supplier extends Model
         });
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'id';
+    }
+
     public function getLogoUrlAttribute(): ?string
     {
         $logo = $this->logo;

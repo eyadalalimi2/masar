@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Distribution;
 
 use App\Models\Distribution\Distributor;
+use App\Support\Validation\UniqueUserContact;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -28,9 +29,10 @@ class DistributorRequest extends FormRequest
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('accounts', 'phone')
-                    ->where(fn($query) => $query->where('account_type', 'distributor'))
-                    ->ignore($distributor?->account?->id),
+                new UniqueUserContact('phone', [
+                    UniqueUserContact::ignore('accounts', $distributor?->account?->id),
+                    UniqueUserContact::ignore('distributors', $distributor?->id),
+                ]),
             ],
             'password' => [$this->isMethod('post') ? 'required' : 'nullable', 'string', 'min:6'],
             'image' => ['nullable', 'image', 'max:4096'],

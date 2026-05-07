@@ -6,6 +6,7 @@ use App\Models\Finance\Account;
 use App\Models\Supplier\Agent;
 use App\Models\Supplier\Supplier;
 use App\Models\Supplier\SupplierFieldChangeRequest;
+use App\Support\Validation\UniqueUserContact;
 use App\Support\WorkingHoursCodec;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -400,14 +401,24 @@ class SupplierService
             return;
         }
 
-        if ($fieldKey === 'phone') {
-            $phoneExists = Agent::query()
-                ->where('phone', $requestedValue)
-                ->where('supplier_id', '!=', $supplier->id)
-                ->exists();
+        if ($fieldKey === 'phone' || $fieldKey === 'email') {
+            $linkedAgentId = Agent::query()->where('supplier_id', $supplier->id)->value('id');
+            $rule = new UniqueUserContact($fieldKey, [
+                UniqueUserContact::ignore('suppliers', $supplier->id),
+                UniqueUserContact::ignore('agents', $linkedAgentId),
+            ]);
 
-            if ($phoneExists) {
-                throw new \DomainException('رقم الهاتف المطلوب مستخدم مسبقًا لحساب آخر.');
+            $error = null;
+            $rule->validate($fieldKey, $requestedValue, function (string $message) use (&$error): void {
+                $error = $message;
+            });
+
+            if ($error !== null) {
+                if ($fieldKey === 'phone') {
+                    throw new \DomainException('رقم الهاتف المطلوب مستخدم مسبقًا لحساب آخر.');
+                }
+
+                throw new \DomainException('البريد الإلكتروني المطلوب مستخدم مسبقًا لحساب آخر.');
             }
         }
 
