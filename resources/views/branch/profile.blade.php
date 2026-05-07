@@ -121,7 +121,7 @@
 
 <script>
     (() => {
-        const mapsKey = @json(config('services.google_maps.key'));
+        const mapsKey = "{{ config('services.google_maps.key') }}";
         const gpsInput = document.querySelector('input[name="gps_location"]');
         const gpsPreview = document.getElementById('gpsPreview');
         const addressInput = document.querySelector('textarea[name="address"]');
@@ -255,7 +255,7 @@
             marker.addListener('dragend', () => {
                 syncPosition(marker.getPosition());
             });
-
+            const mapsKey = document.querySelector('.container-fluid.py-2')?.dataset.mapsKey ?? '';
             map.addListener('click', (event) => {
                 syncPosition(event.latLng);
             });

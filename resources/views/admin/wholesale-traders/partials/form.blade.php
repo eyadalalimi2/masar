@@ -155,11 +155,15 @@
     @endif
 </div>
 
+<input type="hidden" id="commercialStoreMapsKey" value="{{ config('services.google_maps.key') }}">
+<input type="hidden" id="commercialStoreCsrfToken" value="{{ csrf_token() }}">
+
 @once
 @push('scripts')
 <script>
     (() => {
-        const mapsKey = @json(config('services.google_maps.key'));
+        const mapsKey = document.getElementById('commercialStoreMapsKey')?.value ?? '';
+        const csrfToken = document.getElementById('commercialStoreCsrfToken')?.value ?? '';
         const gpsInput = document.querySelector('input[name="gps_location"]');
         const gpsPreview = document.getElementById('commercialStoreGpsPreview');
         const addressInput = document.querySelector('textarea[name="address"]');
@@ -188,7 +192,7 @@
             const csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = '_token';
-            csrfInput.value = @json(csrf_token());
+            csrfInput.value = csrfToken;
 
             const methodInput = document.createElement('input');
             methodInput.type = 'hidden';
