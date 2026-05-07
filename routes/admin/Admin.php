@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Admin\AdminRoleController;
 use App\Http\Controllers\Admin\Admin\AdminSystemSettingsController;
 use App\Http\Controllers\Admin\Admin\AdminTaskController;
 use App\Http\Controllers\Admin\Admin\AdminUserController;
+use App\Http\Controllers\Pdf\PortalPdfTemplateController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,9 @@ Route::middleware(['auth:admin', 'ensure.admin', 'ensure.admin.session', 'ensure
     })->name('admin.platform-release.index');
 
     Route::get('/settings', [AdminSystemSettingsController::class, 'index'])->name('admin.settings.index');
+    Route::get('/settings/pdf-templates', [PortalPdfTemplateController::class, 'index'])->defaults('scope', 'admin')->name('admin.settings.pdf-templates.index');
+    Route::put('/settings/pdf-templates', [PortalPdfTemplateController::class, 'update'])->defaults('scope', 'admin')->name('admin.settings.pdf-templates.update');
+    Route::get('/settings/pdf-templates/preview', [PortalPdfTemplateController::class, 'preview'])->defaults('scope', 'admin')->name('admin.settings.pdf-templates.preview');
     Route::put('/settings/{section}', [AdminSystemSettingsController::class, 'update'])
         ->whereIn('section', ['general', 'security', 'delivery', 'payment'])
         ->name('admin.settings.update');

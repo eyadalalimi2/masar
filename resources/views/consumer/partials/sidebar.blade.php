@@ -47,5 +47,11 @@
                 <i class="bi bi-person-circle"></i><span>الحساب</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('consumer.settings.pdf-templates.index') }}"
+                class="nav-link {{ request()->is('consumer/settings/pdf-templates*') ? 'active' : '' }}">
+                <i class="bi bi-filetype-pdf"></i><span>قوالب التقارير</span>
+            </a>
+        </li>
     </ul>
 </aside>

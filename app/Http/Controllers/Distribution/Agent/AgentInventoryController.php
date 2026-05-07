@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Distribution\Agent;
 
 use App\Http\Controllers\Controller;
 use App\Models\Catalog\Category;
+use App\Models\Catalog\InventoryMovement;
 use App\Models\Catalog\ProductUnit;
 use App\Models\Catalog\Unit;
 use App\Models\Distribution\Branch;
@@ -13,6 +14,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
 
 class AgentInventoryController extends Controller
 {
@@ -127,6 +130,109 @@ class AgentInventoryController extends Controller
         $movements = $this->inventoryService->getRecentMovements($supplierId, 100);
 
         return view('agent.inventory.movements', compact('movements'));
+    }
+
+    public function movementPdf(InventoryMovement $movement)
+    {
+        $supplierId = $this->supplierId();
+        abort_unless((int) $movement->supplier_id === $supplierId, 404);
+
+        $movement->load([
+            'supplier:id,name,phone,address',
+            'branch:id,name,phone,address',
+            'product:id,name,model',
+            'productUnit:id,unit_id',
+            'productUnit.unit:id,name',
+            'agent:id,name,phone',
+        ]);
+
+        $html = view('agent.inventory.movement-pdf', [
+            'movement' => $movement,
+            'printedAt' => now()->format('Y-m-d H:i'),
+        ])->render();
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_top' => 40,
+            'margin_bottom' => 22,
+            'margin_left' => 12,
+            'margin_right' => 12,
+            'tempDir' => storage_path('app/mpdf-temp'),
+        ]);
+
+        $mpdf->SetDirectionality('rtl');
+        $mpdf->WriteHTML($html);
+
+        $filename = 'inventory_movement_' . $movement->id . '.pdf';
+
+        return response(
+            $mpdf->Output('', Destination::STRING_RETURN),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]
+        );
+    }
+
+    public function stockReportPdf(Request $request)
+    {
+        $supplierId = $this->supplierId();
+        $supplier = Auth::guard('agent')->user()->supplier;
+
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'category_id' => (int) $request->query('category_id', 0),
+            'unit_id' => (int) $request->query('unit_id', 0),
+            'stock_status' => trim((string) $request->query('stock_status', '')),
+            'stock_from' => $request->query('stock_from'),
+            'stock_to' => $request->query('stock_to'),
+        ];
+
+        $stockFrom = is_numeric($filters['stock_from']) ? (float) $filters['stock_from'] : null;
+        $stockTo = is_numeric($filters['stock_to']) ? (float) $filters['stock_to'] : null;
+        if ($stockFrom !== null && $stockTo !== null && $stockFrom > $stockTo) {
+            [$stockFrom, $stockTo] = [$stockTo, $stockFrom];
+        }
+        $filters['stock_from'] = $stockFrom;
+        $filters['stock_to'] = $stockTo;
+
+        $inventory = $this->inventoryService->getSupplierInventory($supplierId, 5000, $filters);
+
+        $html = view('agent.inventory.stock-report-pdf', [
+            'rows' => collect($inventory->items()),
+            'printedAt' => now()->format('Y-m-d H:i'),
+            'printedBy' => (string) (Auth::guard('agent')->user()->name ?? ''),
+            'businessName' => (string) ($supplier->business_name ?? $supplier->name ?? ''),
+            'businessAddressAr' => (string) ($supplier->address ?? ''),
+            'businessAddressEn' => (string) ($supplier->address ?? ''),
+            'businessPhone' => (string) ($supplier->phone ?? ''),
+        ])->render();
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_top' => 52,
+            'margin_bottom' => 22,
+            'margin_left' => 12,
+            'margin_right' => 12,
+            'tempDir' => storage_path('app/mpdf-temp'),
+        ]);
+
+        $mpdf->SetDirectionality('rtl');
+        $mpdf->WriteHTML($html);
+
+        $filename = 'inventory_report_' . now()->format('Ymd_His') . '.pdf';
+
+        return response(
+            $mpdf->Output('', Destination::STRING_RETURN),
+            200,
+            [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            ]
+        );
     }
 
     public function addStock(Request $request): RedirectResponse

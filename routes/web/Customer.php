@@ -5,6 +5,7 @@ use App\Http\Controllers\Customer\CustomerPortalAuthController;
 use App\Http\Controllers\Customer\CustomerPortalController;
 use App\Http\Controllers\Customer\PosPortalAuthController;
 use App\Http\Controllers\Customer\WorkshopPortalAuthController;
+use App\Http\Controllers\Pdf\PortalPdfTemplateController;
 use App\Http\Controllers\Consumer\ConsumerAppController;
 use App\Http\Controllers\Finance\Workshop\WorkshopPaymentMethodController;
 use App\Http\Controllers\Workshop\WorkshopAppointmentController;
@@ -62,6 +63,15 @@ Route::post('/consumer/login', [ConsumerPortalAuthController::class, 'login'])->
 
 Route::middleware(['auth:consumer', 'ensure.consumer'])->group(function () {
     Route::get('/consumer/dashboard', [ConsumerAppController::class, 'dashboard'])->name('consumer.dashboard');
+    Route::get('/consumer/settings/pdf-templates', [PortalPdfTemplateController::class, 'index'])
+        ->defaults('scope', 'consumer')
+        ->name('consumer.settings.pdf-templates.index');
+    Route::put('/consumer/settings/pdf-templates', [PortalPdfTemplateController::class, 'update'])
+        ->defaults('scope', 'consumer')
+        ->name('consumer.settings.pdf-templates.update');
+    Route::get('/consumer/settings/pdf-templates/preview', [PortalPdfTemplateController::class, 'preview'])
+        ->defaults('scope', 'consumer')
+        ->name('consumer.settings.pdf-templates.preview');
     Route::get('/consumer/home', [ConsumerAppController::class, 'home'])->name('consumer.home');
     Route::get('/consumer/browse', [ConsumerAppController::class, 'browse'])->name('consumer.browse');
     Route::get('/consumer/recommendations', [ConsumerAppController::class, 'recommendations'])
@@ -139,6 +149,15 @@ Route::post('/workshop/login', [WorkshopPortalAuthController::class, 'login'])->
 
 Route::middleware(['auth:workshop', 'ensure.workshop'])->group(function () {
     Route::get('/workshop/dashboard', [WorkshopPortalAuthController::class, 'dashboard'])->name('workshop.dashboard');
+    Route::get('/workshop/settings/pdf-templates', [PortalPdfTemplateController::class, 'index'])
+        ->defaults('scope', 'workshop')
+        ->name('workshop.settings.pdf-templates.index');
+    Route::put('/workshop/settings/pdf-templates', [PortalPdfTemplateController::class, 'update'])
+        ->defaults('scope', 'workshop')
+        ->name('workshop.settings.pdf-templates.update');
+    Route::get('/workshop/settings/pdf-templates/preview', [PortalPdfTemplateController::class, 'preview'])
+        ->defaults('scope', 'workshop')
+        ->name('workshop.settings.pdf-templates.preview');
     Route::get('/workshop/profile', [WorkshopPortalAuthController::class, 'profile'])->name('workshop.profile.index');
     Route::put('/workshop/profile', [WorkshopPortalAuthController::class, 'updateProfile'])->name('workshop.profile.update');
     Route::get('/workshop/profile/verification', [WorkshopPortalAuthController::class, 'verification'])->name('workshop.profile.verification');

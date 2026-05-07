@@ -6,7 +6,10 @@
         <h1 class="h4 fw-bold mb-1">إضافة وتعديل كمية المخزون</h1>
         <p class="text-muted mb-0">تحكم مباشر بالكميات لكل منتج من خلال الجدول.</p>
     </div>
-    <a href="{{ route('agent.inventory.index') }}" class="btn btn-outline-secondary btn-sm">العودة للوحة المخزون</a>
+    <div class="d-flex gap-2">
+        <a href="{{ route('agent.inventory.report.pdf', request()->query()) }}" target="_blank" class="btn btn-outline-dark btn-sm">طباعة تقرير المخزون</a>
+        <a href="{{ route('agent.inventory.index') }}" class="btn btn-outline-secondary btn-sm">العودة للوحة المخزون</a>
+    </div>
 </div>
 
 @if (session('success'))

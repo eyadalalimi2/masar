@@ -48,6 +48,12 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="{{ route('branch.settings.pdf-templates.index') }}"
+                class="nav-link {{ request()->is('branch/settings/pdf-templates*') ? 'active' : '' }}">
+                <i class="bi bi-filetype-pdf"></i><span>قوالب التقارير</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="{{ route('branch.replenishment.index') }}"
                 class="nav-link {{ request()->is('branch/replenishment*') ? 'active' : '' }}">
                 <i class="bi bi-box-arrow-in-down"></i><span>طلب توريد</span>

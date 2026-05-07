@@ -218,6 +218,14 @@
         </li>
 
         <li class="nav-item">
+            <a class="nav-link {{ request()->is('admin/settings/pdf-templates*') ? 'active' : '' }}"
+                href="{{ route('admin.settings.pdf-templates.index') }}">
+                <i class="bi bi-filetype-pdf"></i>
+                <span>قوالب PDF</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link {{ request()->is('admin/payment-methods*') ? 'active' : '' }}"
                 href="{{ route('admin.payment-methods.index') }}">
                 <i class="bi bi-credit-card-2-front-fill"></i>

@@ -41,5 +41,11 @@
                 <i class="bi bi-bell-fill"></i><span>التنبيهات</span>
             </a>
         </li>
+        <li class="nav-item">
+            <a href="{{ route('distributor.settings.pdf-templates.index') }}"
+                class="nav-link {{ request()->is('distributor/settings/pdf-templates*') ? 'active' : '' }}">
+                <i class="bi bi-filetype-pdf"></i><span>قوالب التقارير</span>
+            </a>
+        </li>
     </ul>
 </aside>

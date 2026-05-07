@@ -84,6 +84,12 @@
             </a>
         </li>
         <li class="nav-item">
+            <a href="{{ route('workshop.settings.pdf-templates.index') }}"
+                class="nav-link {{ request()->is('workshop/settings/pdf-templates*') ? 'active' : '' }}">
+                <i class="bi bi-filetype-pdf"></i><span>قوالب التقارير</span>
+            </a>
+        </li>
+        <li class="nav-item">
             <a href="{{ route('workshop.payment-methods.index') }}"
                 class="nav-link {{ request()->routeIs('workshop.payment-methods.*') ? 'active' : '' }}">
                 <i class="bi bi-wallet2"></i><span>إدارة طرق الدفع</span>

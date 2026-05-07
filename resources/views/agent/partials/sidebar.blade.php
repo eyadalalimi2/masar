@@ -84,9 +84,15 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{{ route('agent.reports.commercial-stores.index') }}"
+            <a href="{{ route('agent.reports.index') }}"
                 class="nav-link {{ request()->is('agent/reports*') ? 'active' : '' }}">
                 <i class="bi bi-bar-chart-line-fill"></i><span>التقارير والتحليلات</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="{{ route('agent.settings.pdf-templates.index') }}"
+                class="nav-link {{ request()->is('agent/settings/pdf-templates*') ? 'active' : '' }}">
+                <i class="bi bi-filetype-pdf"></i><span>قوالب التقارير</span>
             </a>
         </li>
         <li class="nav-item">

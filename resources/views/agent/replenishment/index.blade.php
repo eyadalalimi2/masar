@@ -89,6 +89,8 @@ $statusBadgeClasses = [
                     <td>{{ $row->note ?: '-' }}</td>
                     <td>
                         <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('agent.replenishment.pdf', $row) }}" target="_blank" class="btn btn-sm btn-outline-secondary">PDF</a>
+
                             <form method="POST" action="{{ route('agent.replenishment.approve', $row) }}">
                                 @csrf
                                 @method('PATCH')

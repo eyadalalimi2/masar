@@ -153,12 +153,15 @@ class AgentReportController extends Controller
             );
         }
 
-        $html = view('agent.reports.exports.pdf', [
+        $html = view('agent.reports.exports.pdf-a4', [
             ...$reportData,
             'businessName' => (string) $supplier->business_name,
+            'businessAddress' => (string) ($supplier->address ?? ''),
+            'businessPhone' => (string) ($supplier->phone ?? ''),
             'filterSummary' => $filterSummary,
             'segmentLabel' => $segmentLabel,
             'exportedAt' => now()->format('Y-m-d H:i'),
+            'printedBy' => (string) (Auth::guard('agent')->user()->name ?? Auth::user()->name ?? ''),
         ])->render();
 
         $mpdf = new Mpdf([

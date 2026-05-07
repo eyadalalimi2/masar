@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth:agent', 'ensure.supplier'])->group(function () {
     Route::get('reports', function () {
-        return redirect()->route('agent.reports.commercial-stores.index');
+        return view('agent.reports.hub');
     })->name('agent.reports.index');
 
     Route::get('reports/commercial-stores', [AgentReportController::class, 'commercialStoresIndex'])

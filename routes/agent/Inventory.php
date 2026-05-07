@@ -8,7 +8,9 @@ Route::middleware(['auth:agent', 'ensure.supplier'])->group(function () {
     Route::get('inventory/stock-management', [AgentInventoryController::class, 'stockManagement'])->name('agent.inventory.stock-management');
     Route::get('inventory/distribution', [AgentInventoryController::class, 'distributionPage'])->name('agent.inventory.distribution-page');
     Route::get('inventory/distribution/model-lookup', [AgentInventoryController::class, 'distributionModelLookup'])->name('agent.inventory.distribution.model-lookup');
+    Route::get('inventory/report/pdf', [AgentInventoryController::class, 'stockReportPdf'])->name('agent.inventory.report.pdf');
     Route::get('inventory/movements', [AgentInventoryController::class, 'movements'])->name('agent.inventory.movements');
+    Route::get('inventory/movements/{movement}/pdf', [AgentInventoryController::class, 'movementPdf'])->name('agent.inventory.movements.pdf');
     Route::post('inventory/add-stock', [AgentInventoryController::class, 'addStock'])->name('agent.inventory.add-stock');
     Route::post('inventory/adjust-stock', [AgentInventoryController::class, 'adjustStock'])->name('agent.inventory.adjust-stock');
     Route::post('inventory/distribute', [AgentInventoryController::class, 'distribute'])->name('agent.inventory.distribute');

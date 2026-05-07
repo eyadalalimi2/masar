@@ -24,6 +24,7 @@
                         <th>بعد</th>
                         <th>الفرع</th>
                         <th>ملاحظة</th>
+                        <th>مستند</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,10 +47,13 @@
                         <td>{{ number_format((float) $movement->stock_after, 3) }}</td>
                         <td>{{ $movement->branch?->name ?? '-' }}</td>
                         <td>{{ $movement->note ?: '-' }}</td>
+                        <td>
+                            <a href="{{ route('agent.inventory.movements.pdf', $movement) }}" target="_blank" class="btn btn-sm btn-outline-secondary">PDF</a>
+                        </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted">لا توجد حركات مخزون بعد.</td>
+                        <td colspan="10" class="text-center text-muted">لا توجد حركات مخزون بعد.</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -29,6 +29,9 @@
         <li class="nav-item"><a href="{{ route('pos.reports.index') }}"
                 class="nav-link {{ request()->is('pos/reports*') ? 'active' : '' }}"><i
                     class="bi bi-bar-chart-line-fill"></i><span>التقارير</span></a></li>
+        <li class="nav-item"><a href="{{ route('pos.settings.pdf-templates.index') }}"
+                class="nav-link {{ request()->is('pos/settings/pdf-templates*') ? 'active' : '' }}"><i
+                    class="bi bi-filetype-pdf"></i><span>قوالب التقارير</span></a></li>
         <li class="nav-item"><a href="{{ route('pos.payment-methods.index') }}"
                 class="nav-link {{ request()->is('pos/payment-methods*') ? 'active' : '' }}"><i
                     class="bi bi-wallet2"></i><span>إدارة طرق الدفع</span></a></li>

@@ -20,6 +20,9 @@
     } elseif ($routeName === 'admin.settings.index') {
     $pageTitle = 'إعدادات النظام';
     $pageSubtitle = 'ضبط الإعدادات الأساسية والتشغيلية';
+    } elseif (str_starts_with($routeName, 'admin.settings.pdf-templates')) {
+    $pageTitle = 'قوالب PDF';
+    $pageSubtitle = 'إدارة ترويسة وتذييل ومعاينة مستندات التقارير';
     } elseif ($routeName === 'admin.platform-release.index') {
     $pageTitle = 'إصدار المنصة';
     $pageSubtitle = 'معلومات النسخة الحالية وبيئة التشغيل';
