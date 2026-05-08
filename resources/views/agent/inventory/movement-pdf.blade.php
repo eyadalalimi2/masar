@@ -10,11 +10,11 @@ $titleByType = [
 $documentTitle = $titleByType[$type] ?? 'مستند حركة مخزون';
 @endphp
 
+@section('pdf-template-scope', 'agent')
 @section('pdf-template-type', 'documents')
-@section('pdf-template-key', 'agent-inventory-movement')
 @section('pdf-title', $documentTitle)
 @section('pdf-subtitle', 'Inventory Movement Document')
-@section('pdf-business-name', (string) ($movement->supplier?->name ?? ''))
+@section('pdf-business-name', (string) ($movement->supplier?->business_name ?? $movement->supplier?->owner_name ?? ''))
 @section('pdf-business-address', (string) ($movement->supplier?->address ?? ''))
 @section('pdf-business-phone', (string) ($movement->supplier?->phone ?? ''))
 @section('pdf-printed-by', (string) ($movement->agent?->name ?? auth('agent')->user()->name ?? ''))

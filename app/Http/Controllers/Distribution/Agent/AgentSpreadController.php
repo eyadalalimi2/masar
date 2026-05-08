@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Distribution\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer\Customer;
 use App\Models\Customer\Workshop;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\BranchProductStock;
 use App\Models\Catalog\Product;
+use App\Models\Orders\Order;
+use App\Models\Orders\OrderItem;
 use App\Models\Pos;
 use App\Models\PosLocalProduct;
 use App\Models\Workshop\WorkshopPurchaseOrderItem;
@@ -74,7 +77,7 @@ class AgentSpreadController extends Controller
         $commercialStores = Pos::query()
             ->with('customer:id,address,gps_location')
             ->where('status', 'active')
-            ->get(['id', 'name', 'customer_id']);
+            ->get(['id', 'name', 'owner_id']);
 
         $workshopStockStats = WorkshopPurchaseOrderItem::query()
             ->join('workshop_purchase_orders as purchase_orders', 'purchase_orders.id', '=', 'workshop_purchase_order_items.purchase_order_id')
@@ -93,7 +96,28 @@ class AgentSpreadController extends Controller
         $workshops = Workshop::query()
             ->with('customer:id,address,gps_location')
             ->where('status', 'active')
-            ->get(['id', 'name', 'customer_id']);
+            ->get(['id', 'name', 'owner_id']);
+
+        $wholesaleTraderStockStats = OrderItem::query()
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('customers', 'customers.id', '=', 'orders.buyer_id')
+            ->where('orders.supplier_id', $supplierId)
+            ->where('orders.buyer_type', Customer::class)
+            ->where('orders.status', Order::STATUS_DELIVERED)
+            ->where('customers.type', 'wholesale_trader')
+            ->when(
+                $productQuery !== '',
+                fn($query) => $query->whereIn('order_items.product_id', $matchedProductIds->all())
+            )
+            ->selectRaw('orders.buyer_id as customer_id, COUNT(DISTINCT order_items.product_id) as products_count')
+            ->groupBy('orders.buyer_id')
+            ->get()
+            ->keyBy('customer_id');
+
+        $wholesaleTraders = Customer::query()
+            ->where('type', 'wholesale_trader')
+            ->where('status', 'active')
+            ->get(['id', 'name', 'address', 'gps_location']);
 
         $supplierProductNames = $matchedProducts
             ->pluck('name')
@@ -210,10 +234,35 @@ class AgentSpreadController extends Controller
             ]);
         }
 
+        foreach ($wholesaleTraders as $trader) {
+            $coords = $this->parseCoordinates((string) ($trader->gps_location ?? ''));
+            if ($coords === null) {
+                continue;
+            }
+
+            $productsCount = (int) ($wholesaleTraderStockStats->get($trader->id)?->products_count ?? 0);
+            if (! $showAllPoints && $productsCount === 0) {
+                continue;
+            }
+
+            $markers->push([
+                'type' => 'wholesale_trader',
+                'type_label' => 'تاجر جملة',
+                'id' => (int) $trader->id,
+                'name' => (string) $trader->name,
+                'address' => (string) ($trader->address ?? ''),
+                'products_count' => $productsCount,
+                'stock_quantity' => null,
+                'lat' => $coords['lat'],
+                'lng' => $coords['lng'],
+            ]);
+        }
+
         $summary = [
             'branches' => (int) $markers->where('type', 'branch')->count(),
             'commercial_stores' => (int) $markers->where('type', 'commercial_store')->count(),
             'workshops' => (int) $markers->where('type', 'workshop')->count(),
+            'wholesale_traders' => (int) $markers->where('type', 'wholesale_trader')->count(),
             'all_points' => (int) $markers->count(),
         ];
 

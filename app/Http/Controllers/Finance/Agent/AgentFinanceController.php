@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Finance\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer\Customer;
 use App\Models\Finance\CustomerAccount;
 use App\Models\Finance\Payment;
 use App\Http\Requests\Finance\PaymentRequest;
@@ -117,14 +118,15 @@ class AgentFinanceController extends Controller
         $supplierId = Auth::user()->supplier->id;
 
         $customerIds = Order::where('supplier_id', $supplierId)
-            ->whereNotNull('customer_id')
+            ->where('buyer_type', Customer::class)
+            ->whereNotNull('buyer_id')
             ->distinct()
-            ->pluck('customer_id');
+            ->pluck('buyer_id');
 
         $accounts = CustomerAccount::with(['transactions' => function ($query) {
             $query->latest()->limit(10);
         }, 'customer'])
-            ->whereIn('customer_id', $customerIds)
+            ->whereIn('owner_id', $customerIds)
             ->whereHas('customer', function ($query) use ($customerType) {
                 $query->where('type', $customerType);
             })

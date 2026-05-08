@@ -112,15 +112,24 @@ class Order extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'buyer_id')
-            ->withTrashed()
-            ->where($this->qualifyColumn('buyer_type'), self::BUYER_TYPE_CUSTOMER);
+        $relation = $this->belongsTo(Customer::class, 'buyer_id')->withTrashed();
+
+        if ((string) ($this->buyer_type ?? '') !== self::BUYER_TYPE_CUSTOMER) {
+            $relation->whereRaw('1 = 0');
+        }
+
+        return $relation;
     }
 
     public function consumer()
     {
-        return $this->belongsTo(Consumer::class, 'buyer_id')
-            ->where($this->qualifyColumn('buyer_type'), self::BUYER_TYPE_CONSUMER);
+        $relation = $this->belongsTo(Consumer::class, 'buyer_id');
+
+        if ((string) ($this->buyer_type ?? '') !== self::BUYER_TYPE_CONSUMER) {
+            $relation->whereRaw('1 = 0');
+        }
+
+        return $relation;
     }
 
     public function buyer(): MorphTo

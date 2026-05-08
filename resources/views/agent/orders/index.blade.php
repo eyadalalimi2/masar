@@ -54,7 +54,7 @@
             @forelse ($orders as $order)
             <tr>
                 <td>#{{ $order->id }}</td>
-                <td>{{ $order->customer?->name ?? ($order->consumer?->name ?? $order->customer_name) }}</td>
+                <td>{{ $order->buyer?->name ?? $order->customer_name }}</td>
                 <td>{{ $order->customer_type === 'b2b' ? 'عميل تجاري' : 'مستهلك فردي' }}</td>
                 <td>{{ $order->payment_method_name ?: '-' }}</td>
                 <td>{{ $order->distributor?->name ?: '-' }}</td>

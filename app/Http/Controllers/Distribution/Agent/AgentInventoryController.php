@@ -165,7 +165,7 @@ class AgentInventoryController extends Controller
         abort_unless((int) $movement->supplier_id === $supplierId, 404);
 
         $movement->load([
-            'supplier:id,name,phone,address',
+            'supplier:id,business_name,owner_name,phone,address',
             'branch:id,name,phone,address',
             'product:id,name,model',
             'productUnit:id,unit_id',

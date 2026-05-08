@@ -6,7 +6,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <div>
         <h1 class="h4 fw-bold mb-1">الانتشار</h1>
-        <p class="text-muted mb-0">خريطة أماكن توفر منتجاتك لدى الفروع والمحلات التجارية والورش.</p>
+        <p class="text-muted mb-0">خريطة أماكن توفر منتجاتك لدى الفروع والمحلات التجارية والورش وتجار الجملة.</p>
     </div>
 </div>
 
@@ -43,6 +43,14 @@
             </div>
         </div>
     </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small">تجار الجملة</div>
+                <div class="fs-4 fw-bold">{{ $summary['wholesale_traders'] }}</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm mb-3">
@@ -76,6 +84,7 @@
                     <option value="branch">الفروع</option>
                     <option value="commercial_store">المحلات التجارية</option>
                     <option value="workshop">الورش</option>
+                    <option value="wholesale_trader">تجار الجملة</option>
                 </select>
             </div>
             <div class="col-md-4">
@@ -101,7 +110,7 @@
 </div>
 @elseif (($productQuery ?? '') !== '' && (int) ($summary['all_points'] ?? 0) === 0)
 <div class="alert alert-info border-0 shadow-sm">
-    تم العثور على الصنف، لكن لا توجد نقاط انتشار حالية له في الفروع أو المحلات أو الورش.
+    تم العثور على الصنف، لكن لا توجد نقاط انتشار حالية له في الفروع أو المحلات أو الورش أو تجار الجملة.
 </div>
 @endif
 
@@ -191,6 +200,10 @@
             }
             if (type === 'commercial_store') {
                 return 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
+            }
+
+            if (type === 'wholesale_trader') {
+                return 'https://maps.google.com/mapfiles/ms/icons/purple-dot.png';
             }
 
             return 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png';

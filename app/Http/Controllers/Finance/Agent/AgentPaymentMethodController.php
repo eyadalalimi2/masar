@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Finance\Agent;
 use App\Http\Controllers\Controller;
 use App\Models\Finance\PaymentMethod;
 use App\Models\Finance\PortalPaymentMethod;
-use App\Models\Supplier\Agent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -74,10 +73,11 @@ class AgentPaymentMethodController extends Controller
     private function resolvePortalId(): int
     {
         $agent = Auth::guard('agent')->user();
+        $portalId = (int) ($agent->supplier_id ?? 0);
 
-        abort_unless($agent instanceof Agent, 403);
+        abort_unless($portalId > 0, 403);
 
-        return (int) ($agent->supplier_id ?? 0);
+        return $portalId;
     }
 
     private function normalize(mixed $value): ?string

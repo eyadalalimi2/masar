@@ -21,7 +21,7 @@ class BranchUserController extends Controller
         $branch = $this->currentBranch();
 
         $users = BranchAccount::query()
-            ->where('branch_id', $branch->id)
+            ->where('owner_id', $branch->id)
             ->latest()
             ->paginate(15);
 
@@ -41,7 +41,7 @@ class BranchUserController extends Controller
         ]);
 
         BranchAccount::query()->create([
-            'branch_id' => $branch->id,
+            'owner_id' => $branch->id,
             'name' => $data['name'],
             'phone' => $data['phone'],
             'password' => $data['password'],

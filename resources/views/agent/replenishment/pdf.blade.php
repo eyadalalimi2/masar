@@ -2,7 +2,7 @@
 
 @section('pdf-template-scope', 'agent')
 @section('pdf-template-type', 'documents')
-@section('pdf-title', 'مستند طلب توريد مخزني')
+@section('pdf-title', ' طلب توريد مخزني')
 @section('pdf-subtitle', 'Branch Replenishment Request')
 @section('pdf-printed-by', (string) (auth('agent')->user()->name ?? ''))
 @section('pdf-printed-at', $printedAt)

@@ -187,6 +187,7 @@ class EnsurePortalSensitiveRoutePolicy
                 'agent.distributors.*' => 'distributors.manage',
                 'agent.users.*' => 'users.manage',
                 'agent.commercial-stores.*' => 'customers.commercial.manage',
+                'agent.wholesale-traders.*' => 'customers.commercial.manage',
                 'agent.workshops.*' => 'customers.workshop.manage',
                 'agent.products.*' => 'catalog.manage',
                 'agent.inventory.*' => 'inventory.manage',
