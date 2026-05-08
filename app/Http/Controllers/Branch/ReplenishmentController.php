@@ -8,6 +8,7 @@ use App\Models\Catalog\Product;
 use App\Models\Catalog\ProductUnit;
 use App\Models\Distribution\Branch;
 use App\Models\Distribution\BranchReplenishmentRequest;
+use App\Models\Distribution\BranchReplenishmentOrder;
 use App\Services\Notifications\WebAlertService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -52,8 +53,20 @@ class ReplenishmentController extends Controller
         ]);
 
         $createdRequestIds = [];
+        $orderId = null;
 
-        DB::transaction(function () use ($data, $branch, &$createdRequestIds): void {
+        DB::transaction(function () use ($data, $branch, &$createdRequestIds, &$orderId): void {
+            $orderNotes = array_values(array_filter(array_map(fn($item) => trim((string) ($item['note'] ?? '')), (array) $data['items'])));
+
+            $order = BranchReplenishmentOrder::query()->create([
+                'branch_id' => $branch->id,
+                'supplier_id' => $branch->supplier_id,
+                'status' => 'pending',
+                'note' => count($orderNotes) ? implode(' / ', array_unique($orderNotes)) : null,
+            ]);
+
+            $orderId = (int) $order->id;
+
             foreach ((array) $data['items'] as $item) {
                 $product = Product::query()
                     ->where('supplier_id', $branch->supplier_id)
@@ -66,6 +79,7 @@ class ReplenishmentController extends Controller
                 $createdRequest = BranchReplenishmentRequest::query()->create([
                     'branch_id' => $branch->id,
                     'supplier_id' => $branch->supplier_id,
+                    'order_id' => $orderId,
                     'product_id' => $product->id,
                     'product_unit_id' => (int) $item['product_unit_id'],
                     'requested_quantity' => (float) $item['requested_quantity'],
@@ -83,23 +97,23 @@ class ReplenishmentController extends Controller
         $agentIds = Agent::query()
             ->where('supplier_id', $branch->supplier_id)
             ->pluck('id');
-
         foreach ($agentIds as $agentId) {
             $this->webAlertService->create(
                 'agent',
                 (int) $agentId,
                 'طلب توريد جديد من الفرع',
-                'قام الفرع ' . $branch->name . ' بإنشاء ' . $createdCount . ' طلب/طلبات توريد جديدة.',
+                'قام الفرع ' . $branch->name . ' بإنشاء طلب توريد جديد يحتوي على ' . $createdCount . ' صنف.',
                 [
                     'type' => 'branch_replenishment_created',
                     'request_ids' => $createdRequestIds,
+                    'order_id' => $orderId,
                     'branch_id' => $branch->id,
                     'supplier_id' => $branch->supplier_id,
                 ]
             );
         }
 
-        return back()->with('success', 'تم إرسال ' . $createdCount . ' طلب/طلبات توريد إلى الوكيل بنجاح.');
+        return back()->with('success', 'تم إرسال طلب توريد واحد يحتوي على ' . $createdCount . ' صنف إلى الوكيل بنجاح.');
     }
 
     private function currentBranch(): Branch

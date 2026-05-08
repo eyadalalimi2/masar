@@ -27,6 +27,7 @@ class BranchReplenishmentRequest extends Model
     protected $fillable = [
         'branch_id',
         'supplier_id',
+        'order_id',
         'product_id',
         'product_unit_id',
         'requested_quantity',
@@ -63,5 +64,10 @@ class BranchReplenishmentRequest extends Model
     public function productUnit()
     {
         return $this->belongsTo(ProductUnit::class);
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(BranchReplenishmentOrder::class, 'order_id');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Distribution\Agent;
 use App\Http\Controllers\Controller;
 use App\Models\Catalog\ProductUnit;
 use App\Models\Distribution\Branch;
+use App\Models\Distribution\BranchReplenishmentOrder;
 use App\Models\Distribution\BranchReplenishmentRequest;
 use App\Services\Distribution\InventoryService;
 use App\Services\Notifications\WebAlertService;
@@ -30,13 +31,14 @@ class AgentReplenishmentController extends Controller
         $supplierId = (int) (Auth::guard('agent')->user()->supplier_id ?? 0);
         $status = (string) $request->query('status', '');
 
-        $requests = BranchReplenishmentRequest::query()
-            ->with(['branch:id,name,phone', 'product:id,name,model', 'productUnit:id,unit_id', 'productUnit.unit:id,name'])
-            ->where(function ($query) use ($supplierId) {
-                $query
-                    ->where('supplier_id', $supplierId)
-                    ->orWhereHas('branch', fn($branchQuery) => $branchQuery->where('supplier_id', $supplierId));
-            })
+        $requests = BranchReplenishmentOrder::query()
+            ->with([
+                'branch:id,name,phone',
+                'items.product:id,name,model',
+                'items.productUnit:id,unit_id',
+                'items.productUnit.unit:id,name',
+            ])
+            ->where('supplier_id', $supplierId)
             ->when($status !== '', fn($query) => $query->where('status', $status))
             ->latest()
             ->paginate(20)
@@ -45,7 +47,7 @@ class AgentReplenishmentController extends Controller
         return view('agent.replenishment.index', compact('requests'));
     }
 
-    public function printPdf(BranchReplenishmentRequest $replenishment)
+    public function printPdf(BranchReplenishmentOrder $replenishment)
     {
         $supplierId = (int) (Auth::guard('agent')->user()->supplier_id ?? 0);
         abort_unless(
@@ -57,9 +59,9 @@ class AgentReplenishmentController extends Controller
         $replenishment->load([
             'branch:id,name,phone,address',
             'supplier:id,business_name,owner_name,phone,address',
-            'product:id,name,model',
-            'productUnit:id,unit_id,stock_quantity',
-            'productUnit.unit:id,name',
+            'items.product:id,name,model',
+            'items.productUnit:id,unit_id,stock_quantity',
+            'items.productUnit.unit:id,name',
         ]);
 
         $html = view('agent.replenishment.pdf', [
