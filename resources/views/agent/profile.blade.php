@@ -143,8 +143,10 @@ $imageFieldKeys = [
 
 @if (!$profileLocked)
 <div class="d-flex align-items-center gap-2 mb-3">
+    @if (! $supplier->has_verification_request)
     <a href="{{ route('agent.profile.verification') }}" class="btn btn-sm btn-outline-success">طلب التوثيق</a>
-    @if ($supplier->has_verification_request)
+    @else
+    <button type="button" class="btn btn-sm btn-outline-secondary" disabled>طلب التوثيق</button>
     <span class="badge text-bg-warning">طلب التوثيق قيد المراجعة</span>
     <span class="small text-muted">{{ $supplier->verification_requested_at?->format('Y-m-d H:i') }}</span>
     @endif

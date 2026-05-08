@@ -14,7 +14,7 @@
         }
 
         body {
-            font-family: DejaVu Serif, DejaVu Sans, serif;
+            font-family: DejaVu Sans, sans-serif;
             font-size: 11px;
             color: #111827;
             direction: rtl;

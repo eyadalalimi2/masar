@@ -190,12 +190,9 @@ class Supplier extends Model
 
     public function getHasVerificationRequestAttribute(): bool
     {
-        $agentId = (int) ($this->agentAccount?->id ?? 0);
-
-        return $this->verification_requested_at !== null
-            && $this->verification_requested_by_user_id !== null
-            && $agentId > 0
-            && (int) $this->verification_requested_by_user_id === $agentId;
+        return ! $this->is_verified
+            && $this->verification_requested_at !== null
+            && (int) ($this->verification_requested_by_user_id ?? 0) > 0;
     }
 
     public function getWorkingHoursScheduleAttribute(): array

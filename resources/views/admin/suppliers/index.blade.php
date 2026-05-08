@@ -96,7 +96,8 @@ $suppliersTrashedCount = $suppliers->getCollection()->filter(fn($item) => $item-
                 <td>
                     <span>{{ $supplier->business_name }}</span>
                     @if ($supplier->is_verified)
-                    <span class="badge rounded-pill text-bg-primary ms-1">✔</span>
+                    <img src="{{ asset('assets/images/viv.png') }}" alt="موثق" class="ms-1 align-middle"
+                        style="width: 18px; height: 18px; object-fit: contain;">
                     @endif
                 </td>
                 <td style="width: 90px;">

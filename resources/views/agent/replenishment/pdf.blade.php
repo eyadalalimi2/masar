@@ -1,12 +1,9 @@
 @extends('shared.pdf.layout-a4')
 
+@section('pdf-template-scope', 'agent')
 @section('pdf-template-type', 'documents')
-@section('pdf-template-key', 'agent-replenishment-request')
 @section('pdf-title', 'مستند طلب توريد مخزني')
 @section('pdf-subtitle', 'Branch Replenishment Request')
-@section('pdf-business-name', (string) ($replenishment->supplier?->name ?? ''))
-@section('pdf-business-address', (string) ($replenishment->supplier?->address ?? ''))
-@section('pdf-business-phone', (string) ($replenishment->supplier?->phone ?? ''))
 @section('pdf-printed-by', (string) (auth('agent')->user()->name ?? ''))
 @section('pdf-printed-at', $printedAt)
 

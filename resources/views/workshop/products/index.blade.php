@@ -67,6 +67,7 @@
                     <th>المنتج</th>
                     <th>التصنيف</th>
                     <th>سعر الجملة</th>
+                    <th>المخزون</th>
                     <th>المواصفات</th>
                     <th>الحالة</th>
                     <th>الإجراءات</th>
@@ -88,6 +89,13 @@
                     <td>
                         @forelse ($product->productUnits as $unitRow)
                         <div class="small">{{ $unitRow->unit?->name ?? 'وحدة' }}: {{ number_format((float) $unitRow->wholesale_price, 2) }}</div>
+                        @empty
+                        <span class="text-muted">-</span>
+                        @endforelse
+                    </td>
+                    <td>
+                        @forelse ($product->productUnits as $unitRow)
+                        <div class="small">{{ $unitRow->unit?->name ?? 'وحدة' }}: {{ number_format((float) $unitRow->stock_quantity, 3) }}</div>
                         @empty
                         <span class="text-muted">-</span>
                         @endforelse
@@ -130,7 +138,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="text-center text-muted py-4">لا يوجد منتجات</td>
+                    <td colspan="9" class="text-center text-muted py-4">لا يوجد منتجات</td>
                 </tr>
                 @endforelse
             </tbody>

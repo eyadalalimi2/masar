@@ -235,7 +235,7 @@ class SupplierAuthController extends Controller
             return response()->json(['message' => 'حسابك موثّق بالفعل.']);
         }
 
-        if ($user->supplier->has_verification_request) {
+        if ($user->supplier->has_verification_request || $user->supplier->verification_requested_at) {
             return response()->json(['message' => 'طلب التوثيق قيد المراجعة بالفعل.']);
         }
 

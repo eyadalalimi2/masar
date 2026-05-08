@@ -55,6 +55,7 @@ $carModels = collect($product->car_models ?? [])->map(fn($item) => (string) $ite
                     <tr>
                         <th>الوحدة</th>
                         <th>سعر الجملة</th>
+                        <th>المخزون</th>
                         <th>معامل التحويل</th>
                     </tr>
                 </thead>
@@ -63,11 +64,12 @@ $carModels = collect($product->car_models ?? [])->map(fn($item) => (string) $ite
                     <tr>
                         <td>{{ $unitRow->unit?->name ?? '-' }}</td>
                         <td>{{ number_format((float) $unitRow->wholesale_price, 2) }}</td>
+                        <td>{{ number_format((float) $unitRow->stock_quantity, 3) }}</td>
                         <td>{{ rtrim(rtrim(number_format((float) $unitRow->conversion_factor, 4, '.', ''), '0'), '.') }}</td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="3" class="text-center text-muted">لا توجد وحدات</td>
+                        <td colspan="4" class="text-center text-muted">لا توجد وحدات</td>
                     </tr>
                     @endforelse
                 </tbody>

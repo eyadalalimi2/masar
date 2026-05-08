@@ -91,6 +91,7 @@ $productsTrashedCount = $products->getCollection()->filter(fn($item) => $item->t
                 <th>الوكيل</th>
                 <th>التصنيف</th>
                 <th>سعر الجملة</th>
+                <th>المخزون</th>
                 <th>المواصفات</th>
                 <th>الحالة</th>
                 <th>الإجراءات</th>
@@ -120,6 +121,18 @@ $productsTrashedCount = $products->getCollection()->filter(fn($item) => $item->t
                     <div class="small">
                         {{ $unitRow->unit?->name ?? 'وحدة' }}:
                         {{ number_format((float) $unitRow->wholesale_price, 2) }}
+                    </div>
+                    @endforeach
+                    @else
+                    <span class="text-muted">-</span>
+                    @endif
+                </td>
+                <td>
+                    @if ($product->productUnits->isNotEmpty())
+                    @foreach ($product->productUnits as $unitRow)
+                    <div class="small">
+                        {{ $unitRow->unit?->name ?? 'وحدة' }}:
+                        {{ number_format((float) $unitRow->stock_quantity, 3) }}
                     </div>
                     @endforeach
                     @else
@@ -195,7 +208,7 @@ $productsTrashedCount = $products->getCollection()->filter(fn($item) => $item->t
             </tr>
             @empty
             <tr>
-                <td colspan="9" class="text-center text-muted py-4">لا يوجد منتجات</td>
+                <td colspan="10" class="text-center text-muted py-4">لا يوجد منتجات</td>
             </tr>
             @endforelse
         </tbody>

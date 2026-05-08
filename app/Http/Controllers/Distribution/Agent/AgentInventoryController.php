@@ -24,8 +24,35 @@ class AgentInventoryController extends Controller
     public function index(Request $request): View
     {
         $supplierId = $this->supplierId();
-        $inventory = $this->inventoryService->getSupplierInventory($supplierId);
+
+        $filters = [
+            'search' => trim((string) $request->query('search', '')),
+            'category_id' => (int) $request->query('category_id', 0),
+            'unit_id' => (int) $request->query('unit_id', 0),
+            'stock_status' => trim((string) $request->query('stock_status', '')),
+            'stock_from' => $request->query('stock_from'),
+            'stock_to' => $request->query('stock_to'),
+        ];
+
+        $stockFrom = is_numeric($filters['stock_from']) ? (float) $filters['stock_from'] : null;
+        $stockTo = is_numeric($filters['stock_to']) ? (float) $filters['stock_to'] : null;
+        if ($stockFrom !== null && $stockTo !== null && $stockFrom > $stockTo) {
+            [$stockFrom, $stockTo] = [$stockTo, $stockFrom];
+        }
+        $filters['stock_from'] = $stockFrom;
+        $filters['stock_to'] = $stockTo;
+
+        $inventory = $this->inventoryService->getSupplierInventory($supplierId, 20, $filters);
         $inventoryRows = collect($inventory->items());
+
+        $categories = Category::query()
+            ->whereHas('products', fn($query) => $query->where('supplier_id', $supplierId))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+        $units = Unit::query()
+            ->whereHas('productUnits.product', fn($query) => $query->where('supplier_id', $supplierId))
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         $totals = [
             'units_count' => (int) $inventory->total(),
@@ -36,7 +63,7 @@ class AgentInventoryController extends Controller
             })->count(),
         ];
 
-        return view('agent.inventory.index', compact('totals'));
+        return view('agent.inventory.index', compact('totals', 'inventory', 'categories', 'units', 'filters'));
     }
 
     public function stockManagement(Request $request): View

@@ -9,6 +9,7 @@ use App\Models\Customer\Workshop;
 use App\Models\Finance\Account;
 use App\Models\Pos;
 use App\Models\Supplier\Supplier;
+use App\Models\Supplier\SupplierFieldChangeRequest;
 use App\Services\Supplier\SupplierService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,26 @@ class AdminAuthVerificationController extends Controller
                 'verification_requested_by_user_id',
             ]);
 
+        $pendingSupplierFieldChangeRequests = SupplierFieldChangeRequest::query()
+            ->where('status', 'pending')
+            ->with([
+                'supplier:id,owner_name,business_name,phone',
+                'requestedByUser:id,name,phone',
+            ])
+            ->latest()
+            ->limit(20)
+            ->get([
+                'id',
+                'supplier_id',
+                'requested_by_user_id',
+                'field_key',
+                'requested_value',
+                'note',
+                'document_path',
+                'status',
+                'created_at',
+            ]);
+
         $stats = [
             'total_accounts' => $this->totalAccountsCount(),
             'active_accounts' => $this->totalStatusCount(Account::STATUS_ACTIVE),
@@ -77,7 +98,7 @@ class AdminAuthVerificationController extends Controller
             'verified_suppliers' => Supplier::query()->where('is_verified', true)->count(),
         ];
 
-        return view('admin.auth-verification.index', compact('accounts', 'pendingSuppliers', 'stats', 'verifiedAccountsCount'));
+        return view('admin.auth-verification.index', compact('accounts', 'pendingSuppliers', 'pendingSupplierFieldChangeRequests', 'stats', 'verifiedAccountsCount'));
     }
 
     public function toggleAccountStatus(string $type, int $id): RedirectResponse
@@ -405,6 +426,7 @@ class AdminAuthVerificationController extends Controller
 
             $rows = $query->latest()->get();
             $supplierVerificationMap = collect();
+            $supplierProfileMap = collect();
             $customerVerificationMap = collect();
 
             if ($key === 'agent') {
@@ -422,6 +444,16 @@ class AdminAuthVerificationController extends Controller
                             'is_verified',
                             'verification_requested_at',
                             'verification_requested_by_user_id',
+                        ])
+                        ->keyBy('id');
+
+                    $supplierProfileMap = Supplier::query()
+                        ->whereIn('id', $supplierIds)
+                        ->get([
+                            'id',
+                            'owner_name',
+                            'business_name',
+                            'phone',
                         ])
                         ->keyBy('id');
                 }
@@ -453,11 +485,21 @@ class AdminAuthVerificationController extends Controller
                 }
             }
 
-            $items = $rows->map(function ($item) use ($key, $config, $supplierVerificationMap, $customerVerificationMap) {
+            $items = $rows->map(function ($item) use ($key, $config, $supplierVerificationMap, $supplierProfileMap, $customerVerificationMap) {
                 $verificationState = 'not_applicable';
+                $displayName = (string) $item->account_name;
+                $displayPhone = (string) $item->account_phone;
+                $businessName = null;
 
                 if ($key === 'agent') {
                     $supplier = $supplierVerificationMap->get((int) ($item->supplier_id ?? 0));
+                    $supplierProfile = $supplierProfileMap->get((int) ($item->supplier_id ?? 0));
+
+                    if ($supplierProfile) {
+                        $displayName = (string) ($supplierProfile->owner_name ?: $displayName);
+                        $displayPhone = (string) ($supplierProfile->phone ?: $displayPhone);
+                        $businessName = (string) ($supplierProfile->business_name ?: '');
+                    }
 
                     if ($supplier?->is_verified) {
                         $verificationState = 'verified';
@@ -482,8 +524,9 @@ class AdminAuthVerificationController extends Controller
                     'id' => $item->id,
                     'supplier_id' => $key === 'agent' ? (int) ($item->supplier_id ?? 0) : null,
                     'customer_id' => in_array($key, ['commercial_store', 'workshop', 'wholesale_trader'], true) ? (int) ($item->customer_id ?? 0) : null,
-                    'name' => (string) $item->account_name,
-                    'phone' => (string) $item->account_phone,
+                    'name' => $displayName,
+                    'phone' => $displayPhone,
+                    'business_name' => $businessName,
                     'status' => (string) $item->status,
                     'verification_state' => $verificationState,
                     'created_at' => $item->created_at,

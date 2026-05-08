@@ -15,6 +15,9 @@ class ProductRequest extends FormRequest
     public function rules(): array
     {
         $lookupService = app('App\\Services\\Lookup\\LookupService');
+        $stockQuantityRules = $this->isMethod('post')
+            ? ['required', 'numeric', 'min:0']
+            : ['nullable', 'numeric', 'min:0'];
 
         return [
             'supplier_id' => ['required', 'exists:suppliers,id'],
@@ -30,6 +33,7 @@ class ProductRequest extends FormRequest
             'units.*.unit_id' => ['required', 'exists:units,id'],
             'units.*.wholesale_price' => ['required', 'numeric', 'min:0'],
             'units.*.retail_price' => ['required', 'numeric', 'min:0'],
+            'units.*.stock_quantity' => $stockQuantityRules,
             'units.*.conversion_factor' => ['nullable', 'numeric', 'gt:0'],
             'variants' => ['nullable', 'array'],
             'variants.*.variant_type_id' => ['required_with:variants.*.variant_value_id', 'exists:variant_types,id'],
@@ -188,6 +192,7 @@ class ProductRequest extends FormRequest
             'units.*.unit_id' => 'الوحدة',
             'units.*.wholesale_price' => 'سعر الجملة',
             'units.*.retail_price' => 'سعر التجزئة',
+            'units.*.stock_quantity' => 'المخزون',
             'units.*.conversion_factor' => 'معامل التحويل',
             'variants' => 'المواصفات',
             'variants.*.variant_type_id' => 'نوع المواصفة',
@@ -235,6 +240,9 @@ class ProductRequest extends FormRequest
             'units.*.retail_price.required' => 'حقل :attribute مطلوب.',
             'units.*.retail_price.numeric' => 'حقل :attribute يجب أن يكون رقماً.',
             'units.*.retail_price.min' => 'حقل :attribute يجب ألا يقل عن :min.',
+            'units.*.stock_quantity.required' => 'حقل :attribute مطلوب.',
+            'units.*.stock_quantity.numeric' => 'حقل :attribute يجب أن يكون رقماً.',
+            'units.*.stock_quantity.min' => 'حقل :attribute يجب ألا يقل عن :min.',
             'units.*.conversion_factor.numeric' => 'حقل :attribute يجب أن يكون رقماً.',
             'units.*.conversion_factor.gt' => 'حقل :attribute يجب أن يكون أكبر من صفر.',
             'variants.array' => 'صيغة المواصفات غير صحيحة.',

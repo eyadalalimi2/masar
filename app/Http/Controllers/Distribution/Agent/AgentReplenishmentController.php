@@ -56,7 +56,7 @@ class AgentReplenishmentController extends Controller
 
         $replenishment->load([
             'branch:id,name,phone,address',
-            'supplier:id,name,phone,address',
+            'supplier:id,business_name,owner_name,phone,address',
             'product:id,name,model',
             'productUnit:id,unit_id,stock_quantity',
             'productUnit.unit:id,name',

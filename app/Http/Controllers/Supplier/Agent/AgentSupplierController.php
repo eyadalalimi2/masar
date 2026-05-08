@@ -224,7 +224,7 @@ class AgentSupplierController extends Controller
             return redirect()->route('agent.profile')->with('success', 'حسابك موثّق بالفعل.');
         }
 
-        if ($supplier->verification_requested_at) {
+        if ($supplier->has_verification_request || $supplier->verification_requested_at) {
             return redirect()->route('agent.profile')->with('success', 'تم إرسال طلب التوثيق مسبقًا وهو قيد المراجعة.');
         }
 

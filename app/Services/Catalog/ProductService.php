@@ -138,6 +138,9 @@ class ProductService
                 'unit_id' => $unitId,
                 'wholesale_price' => (float) $row['wholesale_price'],
                 'retail_price' => (float) ($row['retail_price'] ?? $row['wholesale_price']),
+                'stock_quantity' => isset($row['stock_quantity']) && $row['stock_quantity'] !== ''
+                    ? (float) $row['stock_quantity']
+                    : 0,
                 'conversion_factor' => isset($row['conversion_factor']) && $row['conversion_factor'] !== ''
                     ? (float) $row['conversion_factor']
                     : 1,

@@ -209,7 +209,7 @@ class SupplierService
                 throw new \DomainException('تمت مراجعة هذا الطلب مسبقًا.');
             }
 
-            $supplier = Supplier::with('user')->findOrFail($supplierId);
+            $supplier = Supplier::findOrFail($supplierId);
 
             $this->applyApprovedFieldChange($supplier, $changeRequest->field_key, $changeRequest->requested_value);
 

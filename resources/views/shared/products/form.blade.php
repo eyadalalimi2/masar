@@ -107,6 +107,7 @@ $selectedProduct = $isEdit ? $product : null;
                     <tr>
                         <th>الوحدة</th>
                         <th>سعر الجملة</th>
+                        <th>المخزون</th>
                         <th>معامل التحويل</th>
                         <th>حذف</th>
                     </tr>
@@ -118,15 +119,16 @@ $selectedProduct = $isEdit ? $product : null;
                     ->map(fn($unit) => [
                     'unit_id' => $unit->unit_id,
                     'wholesale_price' => $unit->wholesale_price,
+                    'stock_quantity' => $unit->stock_quantity,
                     'conversion_factor' => $unit->conversion_factor,
                     ])
                     ->values()
                     ->all()
-                    : [['unit_id' => '', 'wholesale_price' => '', 'conversion_factor' => 1]];
+                    : [['unit_id' => '', 'wholesale_price' => '', 'stock_quantity' => '', 'conversion_factor' => 1]];
 
                     $oldUnits = old('units', $baseUnits);
                     if (count($oldUnits) === 0) {
-                    $oldUnits = [['unit_id' => '', 'wholesale_price' => '', 'conversion_factor' => 1]];
+                    $oldUnits = [['unit_id' => '', 'wholesale_price' => '', 'stock_quantity' => '', 'conversion_factor' => 1]];
                     }
                     @endphp
 
@@ -142,6 +144,8 @@ $selectedProduct = $isEdit ? $product : null;
                         </td>
                         <td><input type="number" step="0.01" min="0" name="units[{{ $index }}][wholesale_price]" class="form-control"
                                 value="{{ $row['wholesale_price'] ?? '' }}" required></td>
+                        <td><input type="number" step="0.001" min="0" name="units[{{ $index }}][stock_quantity]" class="form-control"
+                                value="{{ $row['stock_quantity'] ?? '' }}" required></td>
                         <td><input type="number" step="0.0001" min="0.0001" name="units[{{ $index }}][conversion_factor]" class="form-control"
                                 value="{{ $row['conversion_factor'] ?? 1 }}"></td>
                         <td style="width: 90px;"><button type="button" class="btn btn-sm btn-outline-danger w-100 remove-unit-row">حذف</button></td>
@@ -311,7 +315,8 @@ $selectedProduct = $isEdit ? $product : null;
             unitsBody.querySelectorAll('.unit-row').forEach((row, index) => {
                 row.querySelector('select').setAttribute('name', `units[${index}][unit_id]`);
                 row.querySelectorAll('input')[0].setAttribute('name', `units[${index}][wholesale_price]`);
-                row.querySelectorAll('input')[1].setAttribute('name', `units[${index}][conversion_factor]`);
+                row.querySelectorAll('input')[1].setAttribute('name', `units[${index}][stock_quantity]`);
+                row.querySelectorAll('input')[2].setAttribute('name', `units[${index}][conversion_factor]`);
             });
         }
 
@@ -333,6 +338,7 @@ $selectedProduct = $isEdit ? $product : null;
             row.innerHTML = `
                 <td><select class="form-select" required>${unitOptions}</select></td>
                 <td><input type="number" step="0.01" min="0" class="form-control" required></td>
+                <td><input type="number" step="0.001" min="0" class="form-control" required></td>
                 <td><input type="number" step="0.0001" min="0.0001" class="form-control" value="1"></td>
                 <td style="width: 90px;"><button type="button" class="btn btn-sm btn-outline-danger w-100 remove-unit-row">حذف</button></td>
             `;

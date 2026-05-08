@@ -47,6 +47,7 @@
                         <th>المنتج</th>
                         <th>التصنيف</th>
                         <th>سعر الجملة</th>
+                        <th>المخزون</th>
                         <th>المواصفات</th>
                         <th>الإجراءات</th>
                     </tr>
@@ -78,6 +79,18 @@
                             @endif
                         </td>
                         <td>
+                            @if ($product->productUnits->isNotEmpty())
+                            @foreach ($product->productUnits as $unitRow)
+                            <div class="small">
+                                {{ $unitRow->unit?->name ?? 'وحدة' }}:
+                                {{ number_format((float) $unitRow->stock_quantity, 3) }}
+                            </div>
+                            @endforeach
+                            @else
+                            <span class="text-muted">-</span>
+                            @endif
+                        </td>
+                        <td>
                             @if ($product->productVariants->isNotEmpty())
                             @foreach ($product->productVariants as $variant)
                             <div class="small">
@@ -96,7 +109,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">لا توجد منتجات مفعلة حالياً لهذا
+                        <td colspan="8" class="text-center text-muted py-4">لا توجد منتجات مفعلة حالياً لهذا
                             الوكيل.</td>
                     </tr>
                     @endforelse

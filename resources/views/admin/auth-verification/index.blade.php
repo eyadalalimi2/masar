@@ -109,7 +109,12 @@
                 @forelse ($accounts as $account)
                 <tr>
                     <td>{{ $account->id }}</td>
-                    <td>{{ $account->name }}</td>
+                    <td>
+                        <div class="fw-semibold">{{ $account->name }}</div>
+                        @if ($account->type === 'agent' && !empty($account->business_name))
+                        <div class="small text-muted">{{ $account->business_name }}</div>
+                        @endif
+                    </td>
                     <td dir="ltr">{{ $account->phone }}</td>
                     <td>{{ $account->type_label }}</td>
                     <td>
@@ -219,6 +224,111 @@
                 @empty
                 <tr>
                     <td colspan="6" class="text-center text-muted py-4">لا توجد طلبات توثيق معلقة حاليًا</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    @php
+    $fieldLabels = [
+    'owner_name' => 'اسم المالك',
+    'email' => 'البريد الإلكتروني',
+    'phone' => 'رقم الهاتف',
+    'whatsapp' => 'واتساب',
+    'national_id_number' => 'رقم البطاقة الشخصية',
+    'national_id_image' => 'صورة البطاقة الشخصية',
+    'agent_image' => 'صورة الوكيل',
+    'business_name' => 'الاسم التجاري',
+    'logo' => 'الشعار',
+    'gps_location' => 'الموقع (GPS)',
+    'address' => 'العنوان',
+    'commercial_reg_number' => 'رقم السجل التجاري',
+    'commercial_reg_image' => 'صورة السجل التجاري',
+    'license_number' => 'رقم الرخصة',
+    'license_image' => 'صورة الرخصة',
+    ];
+    $imageFieldKeys = [
+    'logo',
+    'agent_image',
+    'national_id_image',
+    'commercial_reg_image',
+    'license_image',
+    ];
+    @endphp
+    <div class="card-header bg-white fw-semibold">طلبات تعديل الحقول من الوكلاء</div>
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle bg-white mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>الوكيل</th>
+                    <th>الحقل</th>
+                    <th>القيمة المطلوبة</th>
+                    <th>ملاحظة</th>
+                    <th>مستند</th>
+                    <th>التاريخ</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($pendingSupplierFieldChangeRequests as $requestItem)
+                @php $supplier = $requestItem->supplier; @endphp
+                <tr>
+                    <td>{{ $requestItem->id }}</td>
+                    <td>
+                        @if ($supplier)
+                        <div class="fw-semibold">{{ $supplier->business_name }}</div>
+                        <div class="small text-muted">{{ $supplier->owner_name }} - {{ $supplier->phone }}</div>
+                        @else
+                        <span class="text-muted">وكيل غير موجود</span>
+                        @endif
+                    </td>
+                    <td>{{ $fieldLabels[$requestItem->field_key] ?? $requestItem->field_key }}</td>
+                    <td>
+                        @if (in_array($requestItem->field_key, $imageFieldKeys, true) && !empty($requestItem->requested_value))
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ asset('storage/' . $requestItem->requested_value) }}" alt="الصورة المطلوبة" class="rounded border" style="width: 70px; height: 50px; object-fit: cover;">
+                            <a href="{{ asset('storage/' . $requestItem->requested_value) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">عرض</a>
+                        </div>
+                        @else
+                        {{ $requestItem->requested_value }}
+                        @endif
+                    </td>
+                    <td>{{ $requestItem->note ?: '-' }}</td>
+                    <td>
+                        @if ($requestItem->document_path)
+                        <a href="{{ asset('storage/' . $requestItem->document_path) }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-secondary">عرض</a>
+                        @else
+                        -
+                        @endif
+                    </td>
+                    <td>{{ $requestItem->created_at?->format('Y-m-d H:i') }}</td>
+                    <td>
+                        @if ($supplier)
+                        <div class="d-flex gap-1 flex-wrap">
+                            <a href="{{ route('admin.suppliers.show', $supplier) }}" class="btn btn-sm btn-outline-dark">عرض الوكيل</a>
+                            <form action="{{ route('admin.suppliers.field-change-requests.approve', [$supplier, $requestItem]) }}" method="POST" onsubmit="return confirm('تأكيد قبول طلب تعديل الحقل؟');">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn btn-sm btn-success">قبول</button>
+                            </form>
+                            <form action="{{ route('admin.suppliers.field-change-requests.reject', [$supplier, $requestItem]) }}" method="POST" onsubmit="return confirm('تأكيد رفض طلب تعديل الحقل؟');">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit" class="btn btn-sm btn-outline-danger">رفض</button>
+                            </form>
+                        </div>
+                        @else
+                        -
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">لا توجد طلبات تعديل حقول معلقة حاليًا</td>
                 </tr>
                 @endforelse
             </tbody>

@@ -107,10 +107,6 @@ class AdminSupplierController extends Controller
                 $query->latest();
             },
             'distributors.branch',
-            'fieldChangeRequests' => function ($query) {
-                $query->latest();
-            },
-            'fieldChangeRequests.requestedByUser',
         ]);
 
         return view('admin.suppliers.show', compact('supplier'));
