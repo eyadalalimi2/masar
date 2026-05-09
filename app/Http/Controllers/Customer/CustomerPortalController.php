@@ -8,6 +8,8 @@ use App\Models\Catalog\Category;
 use App\Models\Catalog\Product;
 use App\Models\Catalog\ProductUnit;
 use App\Models\Catalog\Unit;
+use App\Models\Distribution\Branch;
+use App\Models\Distribution\BranchProductStock;
 use App\Models\Finance\CustomerAccount;
 use App\Models\Finance\Payment;
 use App\Models\Finance\PaymentMethod;
@@ -18,6 +20,7 @@ use App\Models\Orders\Order;
 use App\Models\Orders\Order as CustomerOrder;
 use App\Models\Orders\OrderStatusHistory;
 use App\Services\Customer\CustomerService;
+use App\Services\Orders\OrderService;
 use App\Support\Validation\UniqueUserContact;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +30,10 @@ use Illuminate\View\View;
 
 class CustomerPortalController extends Controller
 {
-    public function __construct(private readonly CustomerService $customerService) {}
+    public function __construct(
+        private readonly CustomerService $customerService,
+        private readonly OrderService $orderService,
+    ) {}
 
     public function orders(Request $request): View
     {
@@ -342,6 +348,88 @@ class CustomerPortalController extends Controller
 
         return redirect()->route('customer.wholesale.products.index')
             ->with('success', 'تمت إضافة المنتج بنجاح.');
+    }
+
+    public function wholesaleMarketplace(Request $request): View
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $search = trim((string) $request->query('search', ''));
+        $branchId = (int) $request->query('branch_id', 0);
+        $sort = (string) $request->query('sort', 'price_asc');
+
+        $stocks = BranchProductStock::query()
+            ->with([
+                'branch:id,name',
+                'product:id,name,model,image',
+                'productUnit:id,unit_id,product_id',
+                'productUnit.unit:id,name',
+            ])
+            ->where('is_active', true)
+            ->where('quantity', '>', 0)
+            ->whereHas('branch', fn($query) => $query->where('status', 'active'))
+            ->when($branchId > 0, fn($query) => $query->where('branch_id', $branchId))
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->whereHas('product', function ($productQuery) use ($search): void {
+                    $productQuery
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('model', 'like', "%{$search}%");
+                });
+            })
+            ->when($sort === 'price_desc', fn($query) => $query->orderByDesc('selling_price'))
+            ->when($sort === 'qty_desc', fn($query) => $query->orderByDesc('quantity'))
+            ->when($sort === 'branch', fn($query) => $query->orderBy('branch_id'))
+            ->when($sort === 'price_asc', fn($query) => $query->orderBy('selling_price'))
+            ->latest('id')
+            ->paginate(18)
+            ->withQueryString();
+
+        $branches = Branch::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('customer.wholesale.marketplace.index', compact('customer', 'stocks', 'branches', 'search', 'branchId', 'sort'));
+    }
+
+    public function storeWholesaleMarketplaceOrder(Request $request): RedirectResponse
+    {
+        $customer = $this->resolveWholesaleTrader();
+
+        $validated = $request->validate([
+            'stock_id' => ['required', 'integer', 'exists:branch_product_stocks,id'],
+            'quantity' => ['required', 'numeric', 'min:1'],
+        ]);
+
+        $stock = BranchProductStock::query()
+            ->with('branch')
+            ->where('is_active', true)
+            ->where('quantity', '>', 0)
+            ->whereHas('branch', fn($query) => $query->where('status', 'active'))
+            ->findOrFail((int) $validated['stock_id']);
+
+        if ((float) $stock->quantity < (float) $validated['quantity']) {
+            return back()->withErrors(['quantity' => 'الكمية المطلوبة غير متاحة في المخزون الحالي.'])->withInput();
+        }
+
+        $createdOrder = $this->orderService->createOrder([
+            'supplier_id' => (int) $stock->branch->supplier_id,
+            'branch_id' => (int) $stock->branch_id,
+            'buyer_type' => Order::BUYER_TYPE_CUSTOMER,
+            'buyer_id' => (int) $customer->id,
+            'seller_type' => 'branch',
+            'seller_id' => (int) $stock->branch_id,
+            'created_by_agent_id' => 0,
+            'items' => [
+                [
+                    'product_id' => (int) $stock->product_id,
+                    'product_unit_id' => (int) $stock->product_unit_id,
+                    'quantity' => (int) $validated['quantity'],
+                ],
+            ],
+        ]);
+
+        return back()->with('success', 'تم إنشاء طلب الشراء بنجاح. رقم الطلب #' . $createdOrder->id);
     }
 
     public function wholesaleCustomers(Request $request): View

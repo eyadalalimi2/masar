@@ -1,13 +1,13 @@
 ﻿<aside class="customer-sidebar">
     @php
-    $customer = auth('customer')->user();
-    $customerType = (string) ($customer->type ?? '');
-    $typeLabel = match ($customerType) {
-    'wholesale_trader' => 'تاجر الجملة',
-    'retail_store' => 'المحل التجاري',
-    'workshop' => 'ورشة الصيانة',
-    default => 'العميل',
-    };
+        $customer = auth('customer')->user();
+        $customerType = (string) ($customer->type ?? '');
+        $typeLabel = match ($customerType) {
+            'wholesale_trader' => 'تاجر الجملة',
+            'retail_store' => 'المحل التجاري',
+            'workshop' => 'ورشة الصيانة',
+            default => 'العميل',
+        };
     @endphp
 
     <a href="{{ route('customer.dashboard') }}" class="customer-logo" aria-label="الصفحة الرئيسية">
@@ -35,30 +35,36 @@
             </a>
         </li>
         @if ($customerType === 'wholesale_trader')
-        <li class="nav-item">
-            <a href="{{ route('customer.wholesale.products.index') }}"
-                class="nav-link {{ request()->routeIs('customer.wholesale.products.*') ? 'active' : '' }}">
-                إدارة المنتجات
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('customer.wholesale.orders.index') }}"
-                class="nav-link {{ request()->routeIs('customer.wholesale.orders.*') ? 'active' : '' }}">
-                إدارة الطلبات
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('customer.wholesale.customers.index') }}"
-                class="nav-link {{ request()->routeIs('customer.wholesale.customers.*') ? 'active' : '' }}">
-                إدارة العملاء
-            </a>
-        </li>
-        <li class="nav-item">
-            <a href="{{ route('customer.payment-methods.index') }}"
-                class="nav-link {{ request()->routeIs('customer.payment-methods.*') ? 'active' : '' }}">
-                طرق الدفع
-            </a>
-        </li>
+            <li class="nav-item">
+                <a href="{{ route('customer.wholesale.marketplace.index') }}"
+                    class="nav-link {{ request()->routeIs('customer.wholesale.marketplace.*') ? 'active' : '' }}">
+                    تصفح المنتجات
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('customer.wholesale.products.index') }}"
+                    class="nav-link {{ request()->routeIs('customer.wholesale.products.*') ? 'active' : '' }}">
+                    إدارة المنتجات
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('customer.wholesale.orders.index') }}"
+                    class="nav-link {{ request()->routeIs('customer.wholesale.orders.*') ? 'active' : '' }}">
+                    إدارة الطلبات
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('customer.wholesale.customers.index') }}"
+                    class="nav-link {{ request()->routeIs('customer.wholesale.customers.*') ? 'active' : '' }}">
+                    إدارة العملاء
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('customer.payment-methods.index') }}"
+                    class="nav-link {{ request()->routeIs('customer.payment-methods.*') ? 'active' : '' }}">
+                    طرق الدفع
+                </a>
+            </li>
         @endif
         <li class="nav-item">
             <a href="{{ route('customer.profile.index') }}"

@@ -30,6 +30,10 @@ Route::middleware(['auth:customer', 'ensure.customer'])->group(function () {
         ->name('customer.wholesale.products.create');
     Route::post('/customer/wholesale/products', [CustomerPortalController::class, 'wholesaleProductStore'])
         ->name('customer.wholesale.products.store');
+    Route::get('/customer/wholesale/marketplace', [CustomerPortalController::class, 'wholesaleMarketplace'])
+        ->name('customer.wholesale.marketplace.index');
+    Route::post('/customer/wholesale/marketplace/order', [CustomerPortalController::class, 'storeWholesaleMarketplaceOrder'])
+        ->name('customer.wholesale.marketplace.order.store');
     Route::get('/customer/wholesale/orders', [CustomerPortalController::class, 'wholesaleOrders'])
         ->name('customer.wholesale.orders.index');
     Route::patch('/customer/wholesale/orders/{order}/status', [CustomerPortalController::class, 'updateWholesaleOrderStatus'])
